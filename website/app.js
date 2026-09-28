@@ -203,7 +203,13 @@ async function showDashboard(){
                 <h3>✨ My Groups</h3>
                 <div id="mf-groups-inline-list" style="margin:12px 0">Loading...</div>
                 <input id="mf-inline-name" placeholder="Group name" style="width:100%;padding:12px;margin:6px 0">
-                <input id="mf-inline-region" placeholder="Region" style="width:100%;padding:12px;margin:6px 0">
+                <select id="mf-inline-region" style="width:100%;padding:12px;margin:6px 0;border-radius:10px;background:#080611;color:white;border:1px solid #a855f7">
+  <option value="">Select Region</option>
+  <option value="India">🇮🇳 India</option>
+  <option value="Bangladesh">🇧🇩 Bangladesh</option>
+  <option value="Pakistan">🇵🇰 Pakistan</option>
+  <option value="Other">🌍 Other</option>
+</select>
                 <button class="btn" onclick="createInlineGroup()">Create Group</button>
                 <p id="mf-inline-msg"></p>
               </div>
