@@ -42,7 +42,7 @@ function rateLimit(req,res,next){
 }
 app.use(rateLimit);
 
-const base=(process.env.FFGLORY_BASE||'https://ffglory.pro').replace(/\/$/,'');
+const base=(process.env.FFGLORY_BASE||"https://ffglory.pro").replace(//$/,"");
 const accountKey=process.env.FFGLORY_API_KEY; const masterKey=process.env.FFGLORY_MASTER_KEY;
 const appToken=process.env.APP_ACCESS_TOKEN;
 const dataDir=process.env.DATA_DIR || path.resolve(process.cwd(),'data');
