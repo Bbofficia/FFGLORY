@@ -201,7 +201,7 @@ async function showDashboard(){
             <button class="btn" onclick="document.getElementById('mf-groups-inline').style.display='block'">Open</button>
               <div id="mf-groups-inline" style="display:none;margin-top:15px;padding:18px;background:#080611;border:1px solid #a855f7;border-radius:16px">
                 <h3>✨ My Groups</h3>
-                <p id="mf-groups-inline-list">Loading...</p>
+                <div id="mf-groups-inline-list" style="margin:12px 0">Loading...</div>
                 <input id="mf-inline-name" placeholder="Group name" style="width:100%;padding:12px;margin:6px 0">
                 <input id="mf-inline-region" placeholder="Region" style="width:100%;padding:12px;margin:6px 0">
                 <button class="btn" onclick="createInlineGroup()">Create Group</button>
@@ -234,6 +234,7 @@ async function showDashboard(){
   }
 
   dash.style.display="block";
+  loadInlineGroups();
 
   const groupsBtn = document.querySelector(".mf-groups-open");
   if(groupsBtn){
@@ -261,18 +262,53 @@ if(localStorage.getItem("ffglory_token")){
 
 
 async 
+async function loadInlineGroups(){
+  const list=document.getElementById("mf-groups-inline-list");
+  if(!list) return;
+
+  try{
+    const data=await api("/api/groups");
+    const groups=data.groups||[];
+
+    if(!groups.length){
+      list.innerHTML='<div style="color:#aaa">No groups yet.</div>';
+      return;
+    }
+
+    list.innerHTML=groups.map(g=>`
+      <div style="padding:14px;margin:8px 0;background:#100b1d;border:1px solid rgba(168,85,247,.35);border-radius:14px">
+        <strong>👥 ${g.name||"Unnamed Group"}</strong>
+        <div style="color:#22d3ee;margin-top:5px">
+          🌍 Region: ${g.region||"Not set"}
+        </div>
+        <div style="color:#999;font-size:12px;margin-top:4px">
+          Status: ${g.status||"active"}
+        </div>
+      </div>
+    `).join("");
+  }catch(e){
+    list.innerHTML='<div style="color:#ff6b6b">❌ '+e.message+'</div>';
+  }
+}
+
 async function createInlineGroup(){
   const msg=document.getElementById("mf-inline-msg");
   msg.textContent="Creating...";
+
   try{
+    const name=document.getElementById("mf-inline-name").value.trim() || "My FF Group";
+    const region=document.getElementById("mf-inline-region").value.trim();
+
     const r=await api("/api/groups",{
       method:"POST",
-      body:JSON.stringify({
-        name:document.getElementById("mf-inline-name").value || "My FF Group",
-        region:document.getElementById("mf-inline-region").value
-      })
+      body:JSON.stringify({name,region})
     });
+
     msg.textContent="✅ Group created: "+(r.group?.name||"Done");
+    document.getElementById("mf-inline-name").value="";
+    document.getElementById("mf-inline-region").value="";
+
+    await loadInlineGroups();
   }catch(e){
     msg.textContent="❌ "+e.message;
   }
