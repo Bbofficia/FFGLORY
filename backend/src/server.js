@@ -24,7 +24,7 @@ app.use((req,res,next)=>{
   if (isProduction) res.setHeader('Strict-Transport-Security','max-age=31536000; includeSubDomains');
   next();
 });
-app.use(cors({ origin: (origin, cb) => {
+app.use(cors({ credentials: true, allowedHeaders: ['Content-Type','Authorization'], methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'], origin: (origin, cb) => {
   if (!origin) return cb(null, true);
   if (!isProduction && allowedOrigins.length === 0) return cb(null, true);
   if (allowedOrigins.includes(origin)) return cb(null, true);
