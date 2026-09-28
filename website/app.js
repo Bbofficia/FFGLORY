@@ -172,3 +172,76 @@ document.querySelectorAll(".bottom-nav a").forEach(link=>{
 
 const sections=document.querySelectorAll("section");
 sections.forEach((s,i)=>{if(i!==0)s.style.display="none";});
+
+async function showDashboard(){
+  const token = localStorage.getItem("ffglory_token");
+  if(!token) return;
+
+  document.querySelectorAll("section").forEach(s => s.style.display="none");
+
+  let dash = document.getElementById("mf-dashboard");
+
+  if(!dash){
+    dash = document.createElement("section");
+    dash.id = "mf-dashboard";
+    dash.className = "section";
+    document.body.insertBefore(dash, document.querySelector(".bottom-nav"));
+
+    dash.innerHTML = `
+      <div style="max-width:900px;margin:auto">
+        <div class="card" style="margin-bottom:20px">
+          <h2>🔥 MafiaFF Glory Dashboard</h2>
+          <p id="mf-user">Loading account...</p>
+        </div>
+
+        <div class="grid">
+          <div class="card">
+            <h3>👥 Groups</h3>
+            <p>Manage your FF groups.</p>
+            <button class="btn" onclick="alert('Groups coming next')">Open</button>
+          </div>
+
+          <div class="card">
+            <h3>💎 Pricing</h3>
+            <p>View available plans.</p>
+            <button class="btn" onclick="alert('Pricing coming next')">Open</button>
+          </div>
+
+          <div class="card">
+            <h3>🎟️ Coupons</h3>
+            <p>Redeem your coupons.</p>
+            <button class="btn" onclick="alert('Coupons coming next')">Open</button>
+          </div>
+
+          <div class="card">
+            <h3>💳 Transactions</h3>
+            <p>View your transactions.</p>
+            <button class="btn" onclick="alert('Transactions coming next')">Open</button>
+          </div>
+        </div>
+
+        <button class="btn" style="margin-top:25px" onclick="logoutUser()">Logout</button>
+      </div>
+    `;
+  }
+
+  dash.style.display="block";
+
+  try{
+    const data = await api("/auth/me");
+    const user = data.user || data;
+    document.getElementById("mf-user").textContent =
+      `Welcome, ${user.name || user.email || "User"} 👑`;
+  }catch(e){
+    document.getElementById("mf-user").textContent="Welcome to MafiaFF Glory 👑";
+  }
+}
+
+function logoutUser(){
+  localStorage.removeItem("ffglory_token");
+  location.reload();
+}
+
+if(localStorage.getItem("ffglory_token")){
+  window.addEventListener("load", showDashboard);
+}
