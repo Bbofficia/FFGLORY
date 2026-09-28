@@ -301,6 +301,7 @@ async function createMafiaGroup(){
 }
 
 async function openDashboardApi(title, path){
+  if(path === "/api/groups"){ openGroupsManager(); return; }
   try{
     const data = await api(path);
 
