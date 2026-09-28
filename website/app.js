@@ -254,3 +254,12 @@ async function openGroups(){
     alert("Groups error: " + e.message);
   }
 }
+
+async function openGroups(){
+  try{
+    const data = await api("/api/groups");
+    alert(JSON.stringify(data, null, 2));
+  }catch(e){
+    alert("Groups error: " + e.message);
+  }
+}
