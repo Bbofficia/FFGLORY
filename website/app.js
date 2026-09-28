@@ -560,8 +560,20 @@ async function loadAdminTab(tab){
   }catch(e){box.innerHTML=`<div style="color:#ff6b6b">❌ ${e.message}</div>`;}
 }
 async function saveAdminPricing(){
-  const plans=panelPricingCache.map((p,i)=>({id:p.id,name:document.getElementById("apn"+i).value,price:Number(document.getElementById("app"+i).value),credits:Number(document.getElementById("apc"+i).value)}));
-  await api("/admin/pricing",{method:"PUT",body:JSON.stringify({plans})}); alert("Pricing saved"); loadAdminTab("pricing");
+  try{
+    const plans=panelPricingCache.map((p,i)=>({
+      id:p.id,
+      name:document.getElementById("apn"+i).value.trim(),
+      price:Number(document.getElementById("app"+i).value),
+      credits:Number(document.getElementById("apc"+i).value)
+    }));
+    const data=await api("/admin/pricing",{method:"PUT",body:JSON.stringify({plans})});
+    panelPricingCache=data.plans||plans;
+    await loadAdminTab("pricing");
+    alert("✅ Pricing saved successfully");
+  }catch(e){
+    alert("❌ Pricing save failed: "+e.message);
+  }
 }
 async function adminUserRole(id,role){await api("/admin/users/"+id,{method:"PATCH",body:JSON.stringify({role})});}
 async function adminUserToggle(id,active){await api("/admin/users/"+id,{method:"PATCH",body:JSON.stringify({active})});loadAdminTab("users");}
