@@ -108,22 +108,127 @@ app.post('/auth/logout',appAuth,(req,res)=>{const got=(req.get('authorization')|
 app.get('/auth/me',appAuth,(req,res)=>res.json({user:req.user}));
 
 app.use('/api',appAuth);
-app.get('/api/me',proxy('/api/auth/me'));
-app.get('/api/pricing',proxy('/api/pricing'));
-app.get('/api/groups',proxy('/api/client/my-groups'));
-app.post('/api/groups',proxy(()=>'/api/client/auto-clan-group','POST',r=>({region:String(r.body?.region||''),clan_id:String(r.body?.clan_id||'')})));
-app.post('/api/groups/action',proxy(()=>'/api/client/group-action','POST',r=>({action:String(r.body?.action||''),group_id:String(r.body?.group_id||'')})));
-app.get('/api/coupons',proxy('/api/client/my-coupons'));
-app.post('/api/coupons',proxy(()=>'/api/client/create-coupon','POST',r=>({basic_credits:Number(r.body?.basic_credits||0),premium_credits:Number(r.body?.premium_credits||0)})));
-app.get('/api/coupons/redeemed',proxy('/api/client/redeemed-coupons'));
-app.post('/api/coupons/redeem',proxy(()=>'/api/client/redeem-coupon','POST',r=>({code:String(r.body?.code||'')})));
-app.post('/api/coupons/cancel',proxy(()=>'/api/client/cancel-coupon','POST',r=>({code:String(r.body?.code||'')})));
-app.get('/api/transactions',proxy('/api/client/transactions'));
-app.post('/api/transactions/cancel',proxy(()=>'/api/client/cancel-transaction','POST',r=>({transaction_id:String(r.body?.transaction_id||'')})));
-app.get('/api/history',proxy('/api/client/group-history'));
-app.get('/api/glory-progression',async(req,res)=>{try{const x=await ff('GET','/api/client/glory-progression?group_id='+encodeURIComponent(String(req.query.group_id||'')));res.status(x.status).json(x.data)}catch{res.status(502).json({error:'Upstream API unavailable'})}});
-app.get('/api/activity',proxy('/api/client/activity-log'));
-app.get('/api/notifications',proxy('/api/client/notifications'));
+
+const localFile = name => path.join(dataDir,name);
+function readJson(name,fallback){
+  try{return JSON.parse(fs.readFileSync(localFile(name),'utf8')||JSON.stringify(fallback))}
+  catch{return fallback}
+}
+function writeJson(name,value){atomicWrite(localFile(name),value);}
+function userKey(req){return req.user?.id||req.user?.email||"unknown";}
+
+const defaultPricing=[
+  {id:"basic",name:"Basic",price:99,credits:100},
+  {id:"premium",name:"Premium",price:199,credits:250},
+  {id:"pro",name:"Pro",price:399,credits:600}
+];
+
+app.get('/api/me',(req,res)=>res.json({user:req.user}));
+
+app.get('/api/pricing',(req,res)=>{
+  res.json({plans:readJson("pricing.json",defaultPricing)});
+});
+
+app.get('/api/groups',(req,res)=>{
+  const rows=readJson("groups.json",[]);
+  res.json({groups:rows.filter(x=>String(x.userId)===String(userKey(req)))});
+});
+
+app.post('/api/groups',(req,res)=>{
+  const rows=readJson("groups.json",[]);
+  const row={id:crypto.randomUUID(),userId:userKey(req),
+    name:String(req.body?.name||"My FF Group"),
+    region:String(req.body?.region||""),
+    clan_id:String(req.body?.clan_id||""),
+    status:"active",createdAt:new Date().toISOString()};
+  rows.push(row);writeJson("groups.json",rows);
+  audit(req,"group.create",row.id);
+  res.status(201).json({group:row});
+});
+
+app.post('/api/groups/action',(req,res)=>{
+  const rows=readJson("groups.json",[]);
+  const id=String(req.body?.group_id||"");
+  const row=rows.find(x=>String(x.id)===id&&String(x.userId)===String(userKey(req)));
+  if(!row)return res.status(404).json({error:"Group not found"});
+  row.lastAction=String(req.body?.action||"");
+  writeJson("groups.json",rows);
+  res.json({ok:true,group:row});
+});
+
+app.get('/api/coupons',(req,res)=>{
+  const rows=readJson("coupons.json",[]);
+  res.json({coupons:rows.filter(x=>String(x.userId)===String(userKey(req)))});
+});
+
+app.post('/api/coupons',(req,res)=>{
+  const rows=readJson("coupons.json",[]);
+  const row={id:crypto.randomUUID(),userId:userKey(req),
+    code:"MF-"+crypto.randomBytes(4).toString("hex").toUpperCase(),
+    basic_credits:Number(req.body?.basic_credits||0),
+    premium_credits:Number(req.body?.premium_credits||0),
+    status:"active",createdAt:new Date().toISOString()};
+  rows.push(row);writeJson("coupons.json",rows);
+  res.status(201).json({coupon:row});
+});
+
+app.post('/api/coupons/redeem',(req,res)=>{
+  const rows=readJson("coupons.json",[]);
+  const code=String(req.body?.code||"").trim().toUpperCase();
+  const row=rows.find(x=>x.code===code&&x.status==="active");
+  if(!row)return res.status(404).json({error:"Coupon not found"});
+  row.status="redeemed";row.redeemedBy=userKey(req);row.redeemedAt=new Date().toISOString();
+  writeJson("coupons.json",rows);res.json({ok:true,coupon:row});
+});
+
+app.get('/api/coupons/redeemed',(req,res)=>{
+  const rows=readJson("coupons.json",[]);
+  res.json({coupons:rows.filter(x=>x.redeemedBy===userKey(req))});
+});
+
+app.post('/api/coupons/cancel',(req,res)=>{
+  const rows=readJson("coupons.json",[]);
+  const code=String(req.body?.code||"").trim().toUpperCase();
+  const row=rows.find(x=>x.code===code&&x.userId===userKey(req));
+  if(!row)return res.status(404).json({error:"Coupon not found"});
+  row.status="cancelled";writeJson("coupons.json",rows);
+  res.json({ok:true,coupon:row});
+});
+
+app.get('/api/transactions',(req,res)=>{
+  const rows=readJson("transactions.json",[]);
+  res.json({transactions:rows.filter(x=>String(x.userId)===String(userKey(req)))});
+});
+
+app.post('/api/transactions/cancel',(req,res)=>{
+  const rows=readJson("transactions.json",[]);
+  const id=String(req.body?.transaction_id||"");
+  const row=rows.find(x=>String(x.id)===id&&String(x.userId)===String(userKey(req)));
+  if(!row)return res.status(404).json({error:"Transaction not found"});
+  row.status="cancelled";writeJson("transactions.json",rows);
+  res.json({ok:true,transaction:row});
+});
+
+app.get('/api/history',(req,res)=>{
+  const rows=readJson("history.json",[]);
+  res.json({history:rows.filter(x=>String(x.userId)===String(userKey(req)))});
+});
+
+app.get('/api/glory-progression',(req,res)=>{
+  const rows=readJson("glory.json",{});
+  res.json(rows[userKey(req)]||{level:1,xp:0,nextLevelXp:100});
+});
+
+app.get('/api/activity',(req,res)=>{
+  const rows=readAudit().filter(x=>String(x.actorId)===String(userKey(req)));
+  res.json({activity:rows.slice(-100).reverse()});
+});
+
+app.get('/api/notifications',(req,res)=>{
+  const rows=readJson("notifications.json",[]);
+  res.json({notifications:rows.filter(x=>String(x.userId)===String(userKey(req)))});
+});
+
 app.post('/auth/change-password',appAuth,(req,res)=>{ const u=readUsers()[req.user.email]; const old=String(req.body?.old_password||''); const next=String(req.body?.new_password||''); if(!u||!verifyPassword(old,u.passwordHash)) return res.status(401).json({error:'Current password is incorrect'}); if(next.length<8) return res.status(400).json({error:'New password must be at least 8 characters'}); u.passwordHash=hashPassword(next); const users=readUsers(); users[req.user.email]=u; writeUsers(users); for(const [k,s] of sessions){ if(s?.user?.id===u.id) sessions.delete(k); } writeSessions(Object.fromEntries(sessions)); audit(req,'password.change',req.user.email); res.json({ok:true}); });
 
 function ensureAdmin(){
