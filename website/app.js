@@ -198,7 +198,15 @@ async function showDashboard(){
           <div class="card">
             <h3>👥 Groups</h3>
             <p>Manage your FF groups.</p>
-            <button class="btn mf-groups-open">Open</button>
+            <button class="btn" onclick="document.getElementById('mf-groups-inline').style.display='block'">Open</button>
+              <div id="mf-groups-inline" style="display:none;margin-top:15px;padding:18px;background:#080611;border:1px solid #a855f7;border-radius:16px">
+                <h3>✨ My Groups</h3>
+                <p id="mf-groups-inline-list">Loading...</p>
+                <input id="mf-inline-name" placeholder="Group name" style="width:100%;padding:12px;margin:6px 0">
+                <input id="mf-inline-region" placeholder="Region" style="width:100%;padding:12px;margin:6px 0">
+                <button class="btn" onclick="createInlineGroup()">Create Group</button>
+                <p id="mf-inline-msg"></p>
+              </div>
           </div>
 
           <div class="card">
@@ -253,6 +261,23 @@ if(localStorage.getItem("ffglory_token")){
 
 
 async 
+async function createInlineGroup(){
+  const msg=document.getElementById("mf-inline-msg");
+  msg.textContent="Creating...";
+  try{
+    const r=await api("/api/groups",{
+      method:"POST",
+      body:JSON.stringify({
+        name:document.getElementById("mf-inline-name").value || "My FF Group",
+        region:document.getElementById("mf-inline-region").value
+      })
+    });
+    msg.textContent="✅ Group created: "+(r.group?.name||"Done");
+  }catch(e){
+    msg.textContent="❌ "+e.message;
+  }
+}
+
 async function openGroupsManager(){
   const old=document.getElementById("mf-api-modal");
   if(old) old.remove();
