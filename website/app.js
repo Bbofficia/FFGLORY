@@ -317,7 +317,6 @@ if(localStorage.getItem("ffglory_token")){
 }
 
 
-async 
 async function loadInlineGroups(){
   const list=document.getElementById("mf-groups-inline-list");
   if(!list) return;
