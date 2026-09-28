@@ -48,6 +48,20 @@ style.textContent = `
 }
 .mf-switch{text-align:center;margin-top:16px;color:#aaa4b8}
 .mf-switch span{color:#22d3ee;cursor:pointer;font-weight:700}
+
+.mf-admin-card{grid-column:1/-1;border:1px solid rgba(255,209,102,.5)!important;background:linear-gradient(145deg,rgba(255,209,102,.09),rgba(168,85,247,.08))!important}
+.mf-admin-btn{padding:11px 16px;border:0;border-radius:12px;color:#0a0710;background:linear-gradient(90deg,#ffd166,#22d3ee);font-weight:900;cursor:pointer}
+.mf-admin-panel{position:fixed;inset:0;z-index:100000;background:#05030b;color:#fff;overflow:auto;padding:18px}
+.mf-admin-shell{max-width:1050px;margin:0 auto}
+.mf-admin-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+.mf-admin-tabs{display:flex;gap:8px;overflow:auto;padding-bottom:10px}
+.mf-admin-tabs button{white-space:nowrap;padding:10px 14px;border-radius:12px;border:1px solid rgba(168,85,247,.35);background:#100b1d;color:#fff}
+.mf-admin-tabs button.active{background:linear-gradient(90deg,#a855f7,#22d3ee);border-color:transparent}
+.mf-admin-stat{padding:16px;border-radius:16px;background:#100b1d;border:1px solid rgba(255,255,255,.1)}
+.mf-admin-stat b{font-size:24px;display:block;color:#ffd166}
+.mf-admin-table{width:100%;border-collapse:collapse;font-size:13px}
+.mf-admin-table th,.mf-admin-table td{padding:10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+.mf-admin-table input,.mf-admin-table select{background:#080611;color:#fff;border:1px solid #34264d;border-radius:8px;padding:7px}
 .mf-login-toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:100000;padding:9px 16px;border-radius:999px;background:linear-gradient(90deg,#a855f7,#22d3ee);color:#fff;font-size:12px;font-weight:800;box-shadow:0 8px 25px rgba(0,0,0,.35);animation:mfToastIn .25s ease}
 @keyframes mfToastIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 `;
@@ -257,7 +271,12 @@ async function showDashboard(){
           </div>
         </div>
 
-        <button class="btn" style="margin-top:25px" onclick="logoutUser()">Logout</button>
+        <div id="mf-admin-card" class="card mf-admin-card" style="display:none;margin-top:18px">
+  <h3>🛡️ Admin Control Center</h3>
+  <p>Private administrator tools. Customers cannot see this panel.</p>
+  <button class="mf-admin-btn" onclick="openAdminPanel()">Open Admin Panel</button>
+</div>
+<button class="btn" style="margin-top:25px" onclick="logoutUser()">Logout</button>
       </div>
     `;
   }
@@ -275,6 +294,8 @@ async function showDashboard(){
     const user = data.user || data;
     document.getElementById("mf-user").textContent =
       `Welcome, ${user.name || user.email || "User"} 👑`;
+    const adminCard=document.getElementById("mf-admin-card");
+    if(adminCard) adminCard.style.display = user.role === "admin" ? "block" : "none";
   }catch(e){
     document.getElementById("mf-user").textContent="Welcome to MafiaFF Glory 👑";
   }
@@ -495,3 +516,53 @@ async function openDashboardApi(title, path){
     alert(title + " error: " + e.message);
   }
 }
+
+
+async function openAdminPanel(){
+  try{ await api("/admin/overview"); }catch(e){ alert("Admin access denied"); return; }
+  let old=document.getElementById("mf-admin-panel"); if(old) old.remove();
+  const panel=document.createElement("div"); panel.id="mf-admin-panel"; panel.className="mf-admin-panel";
+  panel.innerHTML=`
+    <div class="mf-admin-shell">
+      <div class="mf-admin-head"><div><h2 style="margin:0">🛡️ MafiaFF Glory Admin</h2><small style="color:#aaa">Private control center</small></div><button class="mf-admin-btn" onclick="document.getElementById('mf-admin-panel').remove()">✕ Close</button></div>
+      <div id="mf-admin-tabs" class="mf-admin-tabs">
+        <button onclick="loadAdminTab('overview')">📊 Overview</button><button onclick="loadAdminTab('users')">👥 Users</button><button onclick="loadAdminTab('groups')">🎮 Groups</button><button onclick="loadAdminTab('pricing')">💎 Pricing</button><button onclick="loadAdminTab('coupons')">🎟️ Coupons</button><button onclick="loadAdminTab('transactions')">💳 Transactions</button><button onclick="loadAdminTab('audit')">📝 Audit</button>
+      </div>
+      <div id="mf-admin-content" style="margin-top:12px">Loading...</div>
+    </div>`;
+  document.body.appendChild(panel); loadAdminTab("overview");
+}
+async function loadAdminTab(tab){
+  const box=document.getElementById("mf-admin-content"); if(!box)return;
+  document.querySelectorAll("#mf-admin-tabs button").forEach(b=>b.classList.toggle("active",b.textContent.toLowerCase().includes(tab)));
+  try{
+    if(tab==="overview"){
+      const d=await api("/admin/overview"),s=d.stats||{};
+      box.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">${Object.entries(s).map(([k,v])=>`<div class="mf-admin-stat"><small>${k}</small><b>${v}</b></div>`).join("")}</div>`;
+    }else if(tab==="users"){
+      const d=await api("/admin/users");
+      box.innerHTML=`<div style="overflow:auto"><table class="mf-admin-table"><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Action</th></tr>${d.users.map(u=>`<tr><td>${u.name||"-"}</td><td>${u.email}</td><td><select onchange="adminUserRole('${u.id}',this.value)"><option ${u.role==="user"?"selected":""}>user</option><option ${u.role==="admin"?"selected":""}>admin</option></select></td><td>${u.active?"Active":"Disabled"}</td><td><button class="mf-admin-btn" onclick="adminUserToggle('${u.id}',${!u.active})">${u.active?"Disable":"Enable"}</button></td></tr>`).join("")}</table></div>`;
+    }else if(tab==="groups"){
+      const d=await api("/admin/groups");
+      box.innerHTML=`<div style="overflow:auto"><table class="mf-admin-table"><tr><th>Name</th><th>Region</th><th>Status</th><th>Action</th></tr>${d.groups.map(g=>`<tr><td>${g.name}</td><td>${g.region||"-"}</td><td>${g.status||"-"}</td><td><button class="mf-admin-btn" onclick="adminDelete('/admin/groups/${g.id}','groups')">Delete</button></td></tr>`).join("")}</table></div>`;
+    }else if(tab==="pricing"){
+      const d=await api("/admin/pricing");
+      box.innerHTML=`<div style="display:grid;gap:12px">${d.plans.map((p,i)=>`<div class="mf-admin-stat"><input id="apn${i}" value="${p.name}"> <input id="app${i}" type="number" value="${p.price}"> <input id="apc${i}" type="number" value="${p.credits}"> <input id="api${i}" value="${p.id}" disabled></div>`).join("")}<button class="mf-admin-btn" onclick="saveAdminPricing()">💾 Save Pricing</button></div>`;
+      panelPricingCache=d.plans;
+    }else if(tab==="coupons"){
+      const d=await api("/admin/coupons"); box.innerHTML=`<div style="overflow:auto"><table class="mf-admin-table"><tr><th>Code</th><th>User</th><th>Status</th></tr>${d.coupons.map(c=>`<tr><td>${c.code}</td><td>${c.userId}</td><td>${c.status}</td></tr>`).join("")}</table></div>`;
+    }else if(tab==="transactions"){
+      const d=await api("/admin/transactions"); box.innerHTML=`<div style="overflow:auto"><table class="mf-admin-table"><tr><th>Plan</th><th>Amount</th><th>User</th><th>Status</th></tr>${d.transactions.map(t=>`<tr><td>${t.planName}</td><td>₹${t.amount}</td><td>${t.userId}</td><td>${t.status}</td></tr>`).join("")}</table></div>`;
+    }else if(tab==="audit"){
+      const d=await api("/admin/audit?limit=200"); box.innerHTML=`<pre style="white-space:pre-wrap;background:#100b1d;padding:14px;border-radius:14px;max-height:65vh;overflow:auto">${JSON.stringify(d.events||[],null,2)}</pre>`;
+    }
+  }catch(e){box.innerHTML=`<div style="color:#ff6b6b">❌ ${e.message}</div>`;}
+}
+let panelPricingCache=[];
+async function saveAdminPricing(){
+  const plans=panelPricingCache.map((p,i)=>({id:p.id,name:document.getElementById("apn"+i).value,price:Number(document.getElementById("app"+i).value),credits:Number(document.getElementById("apc"+i).value)}));
+  await api("/admin/pricing",{method:"PUT",body:JSON.stringify({plans})}); alert("Pricing saved"); loadAdminTab("pricing");
+}
+async function adminUserRole(id,role){await api("/admin/users/"+id,{method:"PATCH",body:JSON.stringify({role})});}
+async function adminUserToggle(id,active){await api("/admin/users/"+id,{method:"PATCH",body:JSON.stringify({active})});loadAdminTab("users");}
+async function adminDelete(path,tab){if(!confirm("Delete this item?"))return;await api(path,{method:"DELETE"});loadAdminTab(tab);}
