@@ -166,9 +166,15 @@ document.querySelectorAll(".bottom-nav a").forEach(link=>{
   link.addEventListener("click",e=>{
     e.preventDefault();
     const target=link.getAttribute("href");
-    document.querySelectorAll("section").forEach(s=>s.style.display="none");
+
+    const dash=document.getElementById("mf-dashboard");
+    if(dash) dash.style.display="none";
+
+    document.querySelectorAll("section").forEach(sec=>sec.style.display="none");
+
     const page=document.querySelector(target);
     if(page) page.style.display="block";
+
     window.scrollTo({top:0,behavior:"smooth"});
     document.querySelectorAll(".bottom-nav a").forEach(a=>a.classList.remove("active"));
     link.classList.add("active");
