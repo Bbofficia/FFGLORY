@@ -24,12 +24,12 @@ app.use((req,res,next)=>{
   if (isProduction) res.setHeader('Strict-Transport-Security','max-age=31536000; includeSubDomains');
   next();
 });
-app.use(cors({ credentials: true, allowedHeaders: ['Content-Type','Authorization'], methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'], origin: (origin, cb) => {
+app.use(cors({ credentials: true, allowedHeaders: ['Content-Type','Authorization','X-Request-ID'], methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'], origin: (origin, cb) => {
   if (!origin) return cb(null, true);
   if (!isProduction && allowedOrigins.length === 0) return cb(null, true);
   if (allowedOrigins.includes(origin)) return cb(null, true);
   return cb(new Error('Origin not allowed'));
-}, methods: ['GET','POST','PATCH','OPTIONS'], allowedHeaders: ['Content-Type','Authorization','X-Request-ID'] }));
+}, allowedHeaders: ['Content-Type','Authorization','X-Request-ID'] }));
 app.use(express.json({ limit: '32kb' }));
 app.use((err,req,res,next)=>{ if(err?.type==='entity.parse.failed') return res.status(400).json({error:'Invalid JSON body'}); if(err) return res.status(500).json({error:'Request processing error'}); next(); });
 
