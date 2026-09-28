@@ -247,7 +247,60 @@ if(localStorage.getItem("ffglory_token")){
 }
 
 
-async function openDashboardApi(title, path){
+async 
+async function openGroupsManager(){
+  const old=document.getElementById("mf-api-modal");
+  if(old) old.remove();
+
+  const wrap=document.createElement("div");
+  wrap.id="mf-api-modal";
+  wrap.className="mf-modal";
+  wrap.innerHTML=`
+    <div class="mf-modal-card">
+      <button class="mf-close" onclick="this.closest('.mf-modal').remove()">✕</button>
+      <h2>✨ My Groups</h2>
+      <div id="mf-groups-list">Loading...</div>
+      <hr>
+      <h3>Create New Group</h3>
+      <input id="mf-group-name" placeholder="Group name">
+      <input id="mf-group-region" placeholder="Region (optional)">
+      <input id="mf-group-clan" placeholder="Clan ID (optional)">
+      <button class="mf-primary" onclick="createMafiaGroup()">Create Group</button>
+      <p id="mf-group-msg"></p>
+    </div>`;
+  document.body.appendChild(wrap);
+
+  try{
+    const data=await api("/api/groups");
+    const groups=data.groups||[];
+    document.getElementById("mf-groups-list").innerHTML=groups.length
+      ? groups.map(g=>`<div class="mf-row"><b>${String(g.name||"Group")}</b></div>`).join("")
+      : "<p>No groups yet.</p>";
+  }catch(e){
+    document.getElementById("mf-groups-list").textContent="Error: "+e.message;
+  }
+}
+
+async function createMafiaGroup(){
+  const msg=document.getElementById("mf-group-msg");
+  msg.textContent="Creating...";
+  try{
+    await api("/api/groups",{
+      method:"POST",
+      body:JSON.stringify({
+        name:document.getElementById("mf-group-name").value,
+        region:document.getElementById("mf-group-region").value,
+        clan_id:document.getElementById("mf-group-clan").value
+      })
+    });
+    msg.textContent="✅ Group created!";
+    setTimeout(openGroupsManager,500);
+  }catch(e){
+    msg.textContent="❌ "+e.message;
+  }
+}
+
+function openDashboardApi(title, path){
   try{
     const data = await api(path);
 
