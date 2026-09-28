@@ -48,9 +48,19 @@ style.textContent = `
 }
 .mf-switch{text-align:center;margin-top:16px;color:#aaa4b8}
 .mf-switch span{color:#22d3ee;cursor:pointer;font-weight:700}
+.mf-login-toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:100000;padding:9px 16px;border-radius:999px;background:linear-gradient(90deg,#a855f7,#22d3ee);color:#fff;font-size:12px;font-weight:800;box-shadow:0 8px 25px rgba(0,0,0,.35);animation:mfToastIn .25s ease}
+@keyframes mfToastIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 `;
 
 document.head.appendChild(style);
+
+function showLoginSuccess(){
+  const toast=document.createElement("div");
+  toast.className="mf-login-toast";
+  toast.textContent="✓ Login successful";
+  document.body.appendChild(toast);
+  setTimeout(()=>toast.remove(),2200);
+}
 
 const modal = document.createElement("div");
 modal.className = "mf-modal";
@@ -277,6 +287,12 @@ function logoutUser(){
 
 if(localStorage.getItem("ffglory_token")){
   window.addEventListener("load", showDashboard);
+  window.addEventListener("load",()=>{
+    if(sessionStorage.getItem("mf_login_success")==="1"){
+      sessionStorage.removeItem("mf_login_success");
+      showLoginSuccess();
+    }
+  });
 }
 
 
