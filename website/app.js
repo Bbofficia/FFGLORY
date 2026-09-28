@@ -260,8 +260,9 @@ async function openGroupsManager(){
   const wrap=document.createElement("div");
   wrap.id="mf-api-modal";
   wrap.className="mf-modal";
+  wrap.style.cssText="position:fixed;inset:0;z-index:99999;background:#05030b;color:white;padding:24px;overflow:auto;"
   wrap.innerHTML=`
-    <div class="mf-modal-card">
+    <div class="mf-modal-card" style="max-width:700px;margin:40px auto;background:#100b1d;border:1px solid #a855f7;border-radius:20px;padding:24px;">
       <button class="mf-close" onclick="this.closest('.mf-modal').remove()">✕</button>
       <h2>✨ My Groups</h2>
       <div id="mf-groups-list">Loading...</div>
