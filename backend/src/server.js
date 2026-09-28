@@ -195,6 +195,30 @@ app.post('/api/coupons/cancel',(req,res)=>{
   res.json({ok:true,coupon:row});
 });
 
+app.post('/api/transactions',(req,res)=>{
+  const rows=readJson("transactions.json",[]);
+  const plan=String(req.body?.plan_id||"");
+  const plans=readJson("pricing.json",defaultPricing);
+  const selected=plans.find(x=>String(x.id)===plan);
+  if(!selected)return res.status(404).json({error:"Plan not found"});
+
+  const row={
+    id:crypto.randomUUID(),
+    userId:userKey(req),
+    planId:selected.id,
+    planName:selected.name,
+    amount:Number(selected.price||0),
+    credits:Number(selected.credits||0),
+    status:"completed",
+    createdAt:new Date().toISOString()
+  };
+
+  rows.push(row);
+  writeJson("transactions.json",rows);
+  audit(req,"transaction.create",row.id);
+  res.status(201).json({transaction:row});
+});
+
 app.get('/api/transactions',(req,res)=>{
   const rows=readJson("transactions.json",[]);
   res.json({transactions:rows.filter(x=>String(x.userId)===String(userKey(req)))});
