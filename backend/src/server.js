@@ -253,6 +253,74 @@ app.get('/api/notifications',(req,res)=>{
   res.json({notifications:rows.filter(x=>String(x.userId)===String(userKey(req)))});
 });
 
+
+app.get('/admin/overview',appAuth,adminOnly,(req,res)=>{
+  const users=Object.values(readUsers());
+  const groups=readJson("groups.json",[]);
+  const coupons=readJson("coupons.json",[]);
+  const transactions=readJson("transactions.json",[]);
+  res.json({
+    stats:{
+      users:users.length,
+      activeUsers:users.filter(u=>u.active!==false).length,
+      admins:users.filter(u=>u.role==="admin").length,
+      groups:groups.length,
+      coupons:coupons.length,
+      transactions:transactions.length,
+      revenue:transactions.reduce((n,x)=>n+Number(x.amount||0),0)
+    }
+  });
+});
+app.get('/admin/groups',appAuth,adminOnly,(req,res)=>res.json({groups:readJson("groups.json",[])}));
+app.patch('/admin/groups/:id',appAuth,adminOnly,(req,res)=>{
+  const rows=readJson("groups.json",[]);
+  const row=rows.find(x=>String(x.id)===String(req.params.id));
+  if(!row)return res.status(404).json({error:"Group not found"});
+  if(typeof req.body?.name==="string") row.name=req.body.name.trim().slice(0,80);
+  if(typeof req.body?.region==="string") row.region=req.body.region.trim().slice(0,40);
+  if(typeof req.body?.status==="string") row.status=req.body.status.trim().slice(0,30);
+  writeJson("groups.json",rows); audit(req,"admin.group.update",row.id);
+  res.json({ok:true,group:row});
+});
+app.delete('/admin/groups/:id',appAuth,adminOnly,(req,res)=>{
+  const rows=readJson("groups.json",[]);
+  const next=rows.filter(x=>String(x.id)!==String(req.params.id));
+  if(next.length===rows.length)return res.status(404).json({error:"Group not found"});
+  writeJson("groups.json",next); audit(req,"admin.group.delete",req.params.id);
+  res.json({ok:true});
+});
+app.get('/admin/coupons',appAuth,adminOnly,(req,res)=>res.json({coupons:readJson("coupons.json",[])}));
+app.patch('/admin/coupons/:id',appAuth,adminOnly,(req,res)=>{
+  const rows=readJson("coupons.json",[]);
+  const row=rows.find(x=>String(x.id)===String(req.params.id));
+  if(!row)return res.status(404).json({error:"Coupon not found"});
+  if(typeof req.body?.status==="string") row.status=req.body.status.trim().slice(0,30);
+  writeJson("coupons.json",rows); audit(req,"admin.coupon.update",row.id);
+  res.json({ok:true,coupon:row});
+});
+app.get('/admin/transactions',appAuth,adminOnly,(req,res)=>res.json({transactions:readJson("transactions.json",[])}));
+app.patch('/admin/transactions/:id',appAuth,adminOnly,(req,res)=>{
+  const rows=readJson("transactions.json",[]);
+  const row=rows.find(x=>String(x.id)===String(req.params.id));
+  if(!row)return res.status(404).json({error:"Transaction not found"});
+  if(typeof req.body?.status==="string") row.status=req.body.status.trim().slice(0,30);
+  writeJson("transactions.json",rows); audit(req,"admin.transaction.update",row.id);
+  res.json({ok:true,transaction:row});
+});
+app.get('/admin/pricing',appAuth,adminOnly,(req,res)=>res.json({plans:readJson("pricing.json",defaultPricing)}));
+app.put('/admin/pricing',appAuth,adminOnly,(req,res)=>{
+  if(!Array.isArray(req.body?.plans)) return res.status(400).json({error:"plans must be an array"});
+  const plans=req.body.plans.map(x=>({
+    id:String(x.id||"").trim(),
+    name:String(x.name||"").trim().slice(0,50),
+    price:Number(x.price||0),
+    credits:Number(x.credits||0)
+  })).filter(x=>x.id&&x.name&&Number.isFinite(x.price)&&x.price>=0&&Number.isFinite(x.credits)&&x.credits>=0);
+  if(!plans.length)return res.status(400).json({error:"At least one valid plan is required"});
+  writeJson("pricing.json",plans); audit(req,"admin.pricing.update","pricing");
+  res.json({ok:true,plans});
+});
+
 app.post('/auth/change-password',appAuth,(req,res)=>{ const u=readUsers()[req.user.email]; const old=String(req.body?.old_password||''); const next=String(req.body?.new_password||''); if(!u||!verifyPassword(old,u.passwordHash)) return res.status(401).json({error:'Current password is incorrect'}); if(next.length<8) return res.status(400).json({error:'New password must be at least 8 characters'}); u.passwordHash=hashPassword(next); const users=readUsers(); users[req.user.email]=u; writeUsers(users); for(const [k,s] of sessions){ if(s?.user?.id===u.id) sessions.delete(k); } writeSessions(Object.fromEntries(sessions)); audit(req,'password.change',req.user.email); res.json({ok:true}); });
 
 function ensureAdmin(){
