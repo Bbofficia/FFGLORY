@@ -198,7 +198,7 @@ async function showDashboard(){
           <div class="card">
             <h3>👥 Groups</h3>
             <p>Manage your FF groups.</p>
-            <button class="btn" onclick="alert('Groups coming next')">Open</button>
+            <button class="btn" onclick="openGroups()">Open</button>
           </div>
 
           <div class="card">
@@ -244,4 +244,13 @@ function logoutUser(){
 
 if(localStorage.getItem("ffglory_token")){
   window.addEventListener("load", showDashboard);
+}
+
+async function openGroups(){
+  try{
+    const data = await api("/api/groups");
+    alert(JSON.stringify(data, null, 2));
+  }catch(e){
+    alert("Groups error: " + e.message);
+  }
 }
