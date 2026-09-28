@@ -1,0 +1,8 @@
+backend/.env
+backend/node_modules/
+android/.gradle/
+android/build/
+android/app/build/
+*.iml
+.idea/
+.DS_Store
