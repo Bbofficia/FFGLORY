@@ -69,3 +69,27 @@ document.querySelectorAll(".btn").forEach(btn => {
     btn.onclick = openLogin;
   }
 });
+
+async function registerUser(){
+  const name = prompt("Enter your name:");
+  if(!name) return;
+
+  const email = prompt("Enter your email:");
+  if(!email) return;
+
+  const password = prompt("Create your password:");
+  if(!password) return;
+
+  try{
+    const data = await api("/auth/register", {
+      method:"POST",
+      body:JSON.stringify({name,email,password})
+    });
+
+    alert(data.message || "Registration successful! Please login.");
+  }catch(err){
+    alert("Registration failed: " + err.message);
+  }
+}
+
+window.registerUser = registerUser;
