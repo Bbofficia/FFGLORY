@@ -518,6 +518,8 @@ async function openDashboardApi(title, path){
 }
 
 
+let panelPricingCache=[];
+
 async function openAdminPanel(){
   try{ await api("/admin/overview"); }catch(e){ alert("Admin access denied"); return; }
   let old=document.getElementById("mf-admin-panel"); if(old) old.remove();
@@ -558,7 +560,6 @@ async function loadAdminTab(tab){
     }
   }catch(e){box.innerHTML=`<div style="color:#ff6b6b">❌ ${e.message}</div>`;}
 }
-let panelPricingCache=[];
 async function saveAdminPricing(){
   const plans=panelPricingCache.map((p,i)=>({id:p.id,name:document.getElementById("apn"+i).value,price:Number(document.getElementById("app"+i).value),credits:Number(document.getElementById("apc"+i).value)}));
   await api("/admin/pricing",{method:"PUT",body:JSON.stringify({plans})}); alert("Pricing saved"); loadAdminTab("pricing");
