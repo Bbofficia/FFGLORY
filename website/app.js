@@ -200,7 +200,9 @@ async function showDashboard(){
             <p>Manage your FF groups.</p>
             <button class="btn" onclick="document.getElementById('mf-groups-inline').style.display='block'">Open</button>
               <div id="mf-groups-inline" style="display:none;margin-top:15px;padding:18px;background:#080611;border:1px solid #a855f7;border-radius:16px">
-                <h3>✨ My Groups</h3>
+                <h3 style="position:relative;padding-right:50px">✨ My Groups
+<button type="button" onclick="document.getElementById('mf-groups-inline').style.display='none'" style="position:absolute;right:0;top:-8px;width:38px;height:38px;background:#ff4d6d;color:white;border:0;border-radius:50%;font-size:20px;font-weight:bold;cursor:pointer">✕</button>
+</h3>
                 <div id="mf-groups-inline-list" style="margin:12px 0">Loading...</div>
                 <input id="mf-inline-name" placeholder="Group name" style="width:100%;padding:12px;margin:6px 0">
                 <select id="mf-inline-region" style="width:100%;padding:12px;margin:6px 0;border-radius:10px;background:#080611;color:white;border:1px solid #a855f7">
