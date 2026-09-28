@@ -3,8 +3,7 @@ const API = "https://ffglory1.onrender.com";
 async function api(path, options = {}) {
   const token = localStorage.getItem("ffglory_token");
   const headers = {"Content-Type":"application/json",...(options.headers||{})};
-  if(token) headers["Authorization"] = "Bearer " + token;
-  if(token) headers.Authorization = `Bearer ${token}`;
+  if(token) headers.Authorization = "Bearer " + token;
 
   const res = await fetch(API + path,{...options,headers});
   const data = await res.json().catch(()=>({}));
@@ -199,25 +198,25 @@ async function showDashboard(){
           <div class="card">
             <h3>👥 Groups</h3>
             <p>Manage your FF groups.</p>
-            <button class="btn" onclick="openGroups()">Open</button>
+            <button class="btn" onclick="openDashboardApi('Groups', '/api/groups')">Open</button>
           </div>
 
           <div class="card">
             <h3>💎 Pricing</h3>
             <p>View available plans.</p>
-            <button class="btn" onclick="alert('Pricing coming next')">Open</button>
+            <button class="btn" onclick="openDashboardApi('Pricing', '/api/pricing')">Open</button>
           </div>
 
           <div class="card">
             <h3>🎟️ Coupons</h3>
             <p>Redeem your coupons.</p>
-            <button class="btn" onclick="alert('Coupons coming next')">Open</button>
+            <button class="btn" onclick="openDashboardApi('Coupons', '/api/coupons')">Open</button>
           </div>
 
           <div class="card">
             <h3>💳 Transactions</h3>
             <p>View your transactions.</p>
-            <button class="btn" onclick="alert('Transactions coming next')">Open</button>
+            <button class="btn" onclick="openDashboardApi('Transactions', '/api/transactions')">Open</button>
           </div>
         </div>
 
@@ -247,20 +246,38 @@ if(localStorage.getItem("ffglory_token")){
   window.addEventListener("load", showDashboard);
 }
 
-async function openGroups(){
-  try{
-    const data = await api("/api/groups");
-    alert(JSON.stringify(data, null, 2));
-  }catch(e){
-    alert("Groups error: " + e.message);
-  }
-}
 
-async function openGroups(){
+async function openDashboardApi(title, path){
   try{
-    const data = await api("/api/groups");
-    alert(JSON.stringify(data, null, 2));
+    const data = await api(path);
+
+    let box = document.getElementById("mf-api-result");
+    if(!box){
+      box = document.createElement("div");
+      box.id = "mf-api-result";
+      box.style.cssText =
+        "position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.82);"+
+        "backdrop-filter:blur(10px);display:flex;align-items:center;"+
+        "justify-content:center;padding:20px";
+
+      box.innerHTML =
+        '<div style="width:min(700px,100%);max-height:85vh;overflow:auto;'+
+        'background:#100b1d;border:1px solid rgba(168,85,247,.5);'+
+        'border-radius:24px;padding:22px;color:white">'+
+        '<h2 id="mf-api-title"></h2>'+
+        '<pre id="mf-api-data" style="white-space:pre-wrap;word-break:break-word;'+
+        'font-size:13px;line-height:1.5"></pre>'+
+        '<button class="btn" onclick="document.getElementById(\'mf-api-result\').remove()">Close</button>'+
+        '</div>';
+
+      document.body.appendChild(box);
+    }
+
+    document.getElementById("mf-api-title").textContent = title;
+    document.getElementById("mf-api-data").textContent =
+      JSON.stringify(data,null,2);
+
   }catch(e){
-    alert("Groups error: " + e.message);
+    alert(title + " error: " + e.message);
   }
 }
