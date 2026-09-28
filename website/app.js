@@ -198,7 +198,7 @@ async function showDashboard(){
           <div class="card">
             <h3>👥 Groups</h3>
             <p>Manage your FF groups.</p>
-            <button class="btn" onclick="openGroupsManager()">Open</button>
+            <button class="btn mf-groups-open">Open</button>
           </div>
 
           <div class="card">
@@ -226,6 +226,11 @@ async function showDashboard(){
   }
 
   dash.style.display="block";
+
+  const groupsBtn = document.querySelector(".mf-groups-open");
+  if(groupsBtn){
+    groupsBtn.addEventListener("click", openGroupsManager);
+  }
 
   try{
     const data = await api("/auth/me");
