@@ -1,0 +1,20 @@
+[
+  {
+    "id": "basic",
+    "name": "Basic",
+    "price": 99,
+    "credits": 100
+  },
+  {
+    "id": "premium",
+    "name": "Premium",
+    "price": 199,
+    "credits": 250
+  },
+  {
+    "id": "pro",
+    "name": "Pro",
+    "price": 399,
+    "credits": 600
+  }
+]
