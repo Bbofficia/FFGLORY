@@ -198,7 +198,7 @@ async function showDashboard(){
           <div class="card">
             <h3>👥 Groups</h3>
             <p>Manage your FF groups.</p>
-            <button class="btn" onclick="openDashboardApi('Groups', '/api/groups')">Open</button>
+            <button class="btn" onclick="openGroupsManager()">Open</button>
           </div>
 
           <div class="card">
