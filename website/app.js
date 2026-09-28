@@ -300,7 +300,7 @@ async function createMafiaGroup(){
   }
 }
 
-function openDashboardApi(title, path){
+async function openDashboardApi(title, path){
   try{
     const data = await api(path);
 
