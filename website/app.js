@@ -58,16 +58,21 @@ modal.innerHTML = `
 <div class="mf-box">
 <button class="mf-close">×</button>
 <h2 id="mf-title">MafiaFF Glory</h2>
-<p id="mf-subtitle">Login to your account</p>
+<p id="mf-subtitle">Sign in to FFGlory panel</p>
 
 <div id="mf-name-wrap" style="display:none">
 <input id="mf-name" placeholder="Full name">
 </div>
 
 <input id="mf-email" type="email" placeholder="Email address">
-<input id="mf-password" type="password" placeholder="Password">
+<input id="mf-password" type="password" placeholder="Enter your password">
 
-<button class="mf-submit" id="mf-submit">LOGIN</button>
+<button class="mf-submit" id="mf-submit">Sign In</button>
+<div style="text-align:center;margin-top:14px;color:#aaa;font-size:13px">Need help? <span style="color:#22d3ee">Contact Admin</span></div>
+<div style="display:flex;justify-content:center;gap:18px;margin-top:12px">
+  <a href="#" onclick="return false" style="color:#25D366;text-decoration:none">WhatsApp</a>
+  <a href="https://t.me/mafiaffglory" target="_blank" style="color:#22a7f2;text-decoration:none">Telegram</a>
+</div>
 
 <div class="mf-switch">
 <span id="mf-switch">Create new account</span>
@@ -87,13 +92,13 @@ function openAuth(register=false){
     register ? "Create Account" : "MafiaFF Glory";
 
   document.getElementById("mf-subtitle").textContent =
-    register ? "Join MafiaFF Glory today" : "Login to your account";
+    register ? "Create your MafiaFF Glory account" : "Sign in to FFGlory panel";
 
   document.getElementById("mf-name-wrap").style.display =
     register ? "block" : "none";
 
   document.getElementById("mf-submit").textContent =
-    register ? "CREATE ACCOUNT" : "LOGIN";
+    register ? "Sign Up" : "Sign In";
 
   document.getElementById("mf-switch").textContent =
     register ? "Already have an account? Login" : "Create new account";
