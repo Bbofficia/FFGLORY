@@ -212,7 +212,7 @@ async function showDashboard(){
           <div class="card">
             <h3>💎 Pricing</h3>
             <p>View available plans.</p>
-            <button class="btn" onclick="openDashboardApi('Pricing', '/api/pricing')">Open</button>
+            <button class="btn" onclick="openPricingManager()">Open</button>
           </div>
 
           <div class="card">
@@ -328,6 +328,64 @@ async function createMafiaGroup(){
     setTimeout(openGroupsManager,500);
   }catch(e){
     msg.textContent="❌ "+e.message;
+  }
+}
+
+async function openPricingManager(){
+  try{
+    const data=await api("/api/pricing");
+    const plans=data.plans||[];
+
+    let box=document.getElementById("mf-pricing-box");
+    if(!box){
+      box=document.createElement("div");
+      box.id="mf-pricing-box";
+      box.style.cssText="position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.86);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto";
+      document.body.appendChild(box);
+    }
+
+    box.innerHTML=`
+      <div style="width:min(850px,100%);background:#100b1d;border:1px solid rgba(168,85,247,.5);border-radius:24px;padding:22px;color:white">
+        <h2>💎 MafiaFF Glory Pricing</h2>
+        <p style="color:#bbb">Choose your plan</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px;margin:20px 0">
+          ${plans.map(plan=>`
+            <div style="background:#080611;border:1px solid rgba(34,211,238,.35);border-radius:18px;padding:18px;text-align:center">
+              <h3>${plan.name}</h3>
+              <div style="font-size:28px;font-weight:800;color:#ffd166">₹${plan.price}</div>
+              <p>🎟️ ${plan.credits} Credits</p>
+              <button class="btn" onclick="buyPricingPlan('${plan.id}')">🛒 Buy Now</button>
+            </div>
+          `).join("")}
+        </div>
+        <p id="mf-pricing-msg"></p>
+        <button class="btn" onclick="document.getElementById('mf-pricing-box').remove()">Close</button>
+      </div>
+    `;
+  }catch(e){
+    alert("Pricing error: "+e.message);
+  }
+}
+
+async function buyPricingPlan(planId){
+  const msg=document.getElementById("mf-pricing-msg");
+  if(msg) msg.textContent="⏳ Processing purchase...";
+
+  try{
+    const data=await api("/api/transactions",{
+      method:"POST",
+      body:JSON.stringify({plan_id:planId})
+    });
+
+    if(msg){
+      msg.textContent="✅ Purchase successful! Transaction ID: "+(data.transaction?.id||"Done");
+      msg.style.color="#22d3ee";
+    }
+  }catch(e){
+    if(msg){
+      msg.textContent="❌ "+e.message;
+      msg.style.color="#ff6b6b";
+    }
   }
 }
 
