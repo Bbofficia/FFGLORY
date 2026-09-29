@@ -305,11 +305,19 @@ app.get('/api/pricing',async(req,res)=>{
   }
 });
 
-app.get('/api/credit-history',(req,res)=>{
+app.get('/api/credit-history',async(req,res)=>{
+  try{
+    const persistent=await getPersistentTransactions(userKey(req));
+    if(persistent){
+      const completed=persistent.filter(x=>x.status==="completed");
+      const balance=completed.reduce((sum,x)=>sum+Number(x.credits||0),0);
+      const purchased=completed.filter(x=>Number(x.credits||0)>0).reduce((sum,x)=>sum+Number(x.credits||0),0);
+      return res.json({balance:Math.max(0,balance),purchased,history:persistent.map(x=>({id:x.id,planName:x.planName,credits:Number(x.credits||0),status:x.status,createdAt:x.createdAt}))});
+    }
+  }catch(e){}
   const transactions=readJson("transactions.json",[]).filter(x=>String(x.userId)===String(userKey(req)));
   const completed=transactions.filter(x=>x.status==="completed");
-  const refunded=transactions.filter(x=>x.status==="refunded");
-  const balance=completed.reduce((sum,x)=>sum+Number(x.credits||0),0)-refunded.reduce((sum,x)=>sum+Number(x.credits||0),0);
+  const balance=completed.reduce((sum,x)=>sum+Number(x.credits||0),0);
   const purchased=completed.filter(x=>Number(x.credits||0)>0).reduce((sum,x)=>sum+Number(x.credits||0),0);
   res.json({balance:Math.max(0,balance),purchased,history:transactions.slice().reverse().map(x=>({id:x.id,planName:x.planName,credits:Number(x.credits||0),status:x.status,createdAt:x.createdAt}))});
 });
