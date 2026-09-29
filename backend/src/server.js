@@ -117,19 +117,6 @@ async function savePersistentPricing(plans){
   await supabaseRequest('POST','pricing?on_conflict=id',plans);
   return true;
 }
-async function getPersistentGroups(userId){
-  if(!supabaseUrl || !supabaseServiceKey) return null;
-  const rows=await supabaseRequest('GET','groups?user_id=eq.'+encodeURIComponent(userId)+'&select=id,user_id,name,region,clan_id,status,created_at&order=created_at.desc');
-  return Array.isArray(rows)?rows:null;
-}
-async function createPersistentGroup(row){
-  if(!supabaseUrl || !supabaseServiceKey) return null;
-  const rows=await supabaseRequest('POST','groups',[{
-    id:row.id,user_id:row.userId,name:row.name,region:row.region||'',clan_id:row.clan_id||'',status:row.status||'active',
-    created_at:row.createdAt||new Date().toISOString()
-  }]);
-  return Array.isArray(rows)&&rows[0]?rows[0]:null;
-}
 const usersFile=path.join(dataDir,'users.json');
 const auditFile=path.join(dataDir,'audit.json');
 const sessionsFile=path.join(dataDir,'sessions.json');
@@ -190,7 +177,7 @@ async function ff(method,pathName,body){
 }
 function proxy(pathName,method='GET',bodyMap=()=>undefined){ return async(req,res)=>{ try{const target=typeof pathName==='function'?pathName(req):pathName; const x=await ff(method,target,bodyMap(req)); res.status(x.status).json(x.data)}catch(e){res.status(502).json({error:'Upstream API unavailable'})} }; }
 
-app.get('/health',(req,res)=>res.json({ok:true,service:'ffglory-backend',version:'4.2',environment:isProduction?'production':'development',upstreamConfigured:Boolean(accountKey&&masterKey)}));
+app.get('/health',(req,res)=>res.json({ok:true,service:'ffmafia-panel',version:'4.2',environment:isProduction?'production':'development',upstreamConfigured:Boolean(accountKey&&masterKey)}));
 
 app.post('/auth/register',async(req,res)=>{
   try{
@@ -371,47 +358,6 @@ app.get('/api/credit-history',async(req,res)=>{
   res.json({balance:Math.max(0,balance),purchased,history:transactions.slice().reverse().map(x=>({id:x.id,planName:x.planName,credits:Number(x.credits||0),status:x.status,createdAt:x.createdAt}))});
 });
 
-app.get('/api/groups',async(req,res)=>{
-  try{
-    const persistent=await getPersistentGroups(userKey(req));
-    if(persistent) return res.json({groups:persistent});
-    const rows=readJson("groups.json",[]);
-    res.json({groups:rows.filter(x=>String(x.userId)===String(userKey(req)))});
-  }catch(e){
-    res.status(500).json({error:"Unable to load Guilds",detail:String(e?.message||e)});
-  }
-});
-
-app.post('/api/groups',async(req,res)=>{
-  const row={id:crypto.randomUUID(),userId:userKey(req),
-    name:String(req.body?.name||"My Guild").trim().slice(0,80),
-    region:String(req.body?.region||"").trim().slice(0,40),
-    clan_id:String(req.body?.clan_id||"").trim().slice(0,80),
-    status:"active",expiresAt:req.body?.expires_at||null,usageLimit:Math.max(1,Number(req.body?.usage_limit||1)),usageCount:0,createdAt:new Date().toISOString()};
-  if(!row.clan_id)return res.status(400).json({error:"Guild ID is required"});
-  try{
-    if(supabaseUrl && supabaseServiceKey){
-      await createPersistentGroup(row);
-    }else{
-      const rows=readJson("groups.json",[]); rows.push(row); writeJson("groups.json",rows);
-    }
-    audit(req,"group.create",row.id);
-    res.status(201).json({group:row});
-  }catch(e){
-    res.status(500).json({error:"Unable to save Guild",detail:String(e?.message||e)});
-  }
-});
-
-app.post('/api/groups/action',(req,res)=>{
-  const rows=readJson("groups.json",[]);
-  const id=String(req.body?.group_id||"");
-  const row=rows.find(x=>String(x.id)===id&&String(x.userId)===String(userKey(req)));
-  if(!row)return res.status(404).json({error:"Group not found"});
-  row.lastAction=String(req.body?.action||"");
-  writeJson("groups.json",rows);
-  res.json({ok:true,group:row});
-});
-
 app.get('/api/coupons',async(req,res)=>{
   try{
     const rows=await getPersistentCoupons(userKey(req));
@@ -529,11 +475,6 @@ app.get('/api/history',(req,res)=>{
   res.json({history:rows.filter(x=>String(x.userId)===String(userKey(req)))});
 });
 
-app.get('/api/glory-progression',(req,res)=>{
-  const rows=readJson("glory.json",{});
-  res.json(rows[userKey(req)]||{level:1,xp:0,nextLevelXp:100});
-});
-
 app.get('/api/activity',(req,res)=>{
   const rows=readAudit().filter(x=>String(x.actorId)===String(userKey(req)));
   res.json({activity:rows.slice(-100).reverse()});
@@ -618,24 +559,6 @@ app.get('/admin/overview',appAuth,adminOnly,(req,res)=>{
       revenue:transactions.reduce((n,x)=>n+Number(x.amount||0),0)
     }
   });
-});
-app.get('/admin/groups',appAuth,adminOnly,(req,res)=>res.json({groups:readJson("groups.json",[])}));
-app.patch('/admin/groups/:id',appAuth,adminOnly,(req,res)=>{
-  const rows=readJson("groups.json",[]);
-  const row=rows.find(x=>String(x.id)===String(req.params.id));
-  if(!row)return res.status(404).json({error:"Group not found"});
-  if(typeof req.body?.name==="string") row.name=req.body.name.trim().slice(0,80);
-  if(typeof req.body?.region==="string") row.region=req.body.region.trim().slice(0,40);
-  if(typeof req.body?.status==="string") row.status=req.body.status.trim().slice(0,30);
-  writeJson("groups.json",rows); audit(req,"admin.group.update",row.id);
-  res.json({ok:true,group:row});
-});
-app.delete('/admin/groups/:id',appAuth,adminOnly,(req,res)=>{
-  const rows=readJson("groups.json",[]);
-  const next=rows.filter(x=>String(x.id)!==String(req.params.id));
-  if(next.length===rows.length)return res.status(404).json({error:"Group not found"});
-  writeJson("groups.json",next); audit(req,"admin.group.delete",req.params.id);
-  res.json({ok:true});
 });
 app.get('/admin/coupons',appAuth,adminOnly,async(req,res)=>{
   try{ const rows=await getPersistentCoupons(""); if(Array.isArray(rows)) return res.json({coupons:rows}); }catch(e){}
