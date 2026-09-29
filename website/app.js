@@ -232,15 +232,6 @@ async function showDashboard(){
           <p id="mf-user">Loading account...</p>
         </div>
 
-        <div class="mf-wallet-card">
-          <div>
-            <div class="mf-wallet-label">💎 AVAILABLE CREDITS</div>
-            <div id="mf-credit-balance" class="mf-wallet-balance">—</div>
-            <div id="mf-credit-summary" class="mf-wallet-summary">Loading credit balance...</div>
-          </div>
-          <button class="mf-glow-btn" onclick="openCreditHistory()">📋 Credit History</button>
-        </div>
-
         <div class="mf-dash-section-title">
           <span>Quick Access</span>
           <small>Everything you need</small>
@@ -248,7 +239,7 @@ async function showDashboard(){
 
         <div class="mf-dash-grid">
           <div class="mf-dash-card"><div class="mf-dash-icon">🛍️</div><h3>Panel Store</h3><p>Browse products and place orders.</p><button class="mf-glow-btn" onclick="openProductStore()">🛒 Browse Products</button></div>
-          <div class="mf-dash-card mf-card-pricing"><div class="mf-dash-icon">💳</div><h3>Payment</h3><p>Buy credits and complete payments.</p><button class="mf-glow-btn" onclick="openPricingManager()">💎 Payment Options</button></div>
+          <div class="mf-dash-card"><div class="mf-dash-icon">💳</div><h3>Payments</h3><p>Product payments and order status.</p><button class="mf-glow-btn" onclick="openProductStore()">💳 View Products</button></div>
           <div class="mf-dash-card mf-card-transactions"><div class="mf-dash-icon">📦</div><h3>My Orders</h3><p>Track payments and purchase history.</p><button class="mf-glow-btn" onclick="openDashboardApi('My Orders','/api/transactions')">📋 View Orders</button></div>
           <div class="mf-dash-card"><div class="mf-dash-icon">💬</div><h3>Support</h3><p>Direct Telegram support: @TeamPro78</p><button class="mf-glow-btn" onclick="window.open('https://t.me/TeamPro78','_blank')">💬 @TeamPro78</button></div>
           <div class="mf-dash-card"><div class="mf-dash-icon">📢</div><h3>Telegram Group</h3><p>Join the official FFMAFIA.PANEL Telegram group.</p><button class="mf-glow-btn" onclick="window.open('https://t.me/mafiaffglory','_blank')">📢 Join Group</button></div>
