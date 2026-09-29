@@ -602,7 +602,10 @@ async function buyPricingPlan(planId){
     const upi=data.upiId||"";
     const upiLink=upi?("upi://pay?pa="+encodeURIComponent(upi)+"&pn="+encodeURIComponent("MafiaFF Glory")+"&am="+encodeURIComponent(t.amount)+"&cu=INR&tn="+encodeURIComponent("MafiaFF "+t.id)):"";
     if(msg){
-      msg.innerHTML='<div style="padding:16px;border:1px solid rgba(168,85,247,.35);border-radius:16px;background:#171025"><b>💳 Payment Pending</b><br><span>Pay ₹'+t.amount+' for '+t.credits+' Credits.</span><br><small>Order: '+t.id+'</small><br><button class="mf-admin-btn" style="margin-top:10px" '+(upiLink?'onclick="location.href=\''+upiLink+'\'"':'disabled')+'>📲 Pay Now</button><button class="mf-admin-btn" style="margin:10px 0 0 8px" onclick="openDashboardApi(\'Transactions\',\'/api/transactions\')">📋 View Order</button><p style="color:#aaa;margin:10px 0 0">'+(upi?'After payment, Admin will verify it and your credits will be added.':'Payment UPI is not configured yet. Admin must configure PAYMENT_UPI_ID.')+'</p></div>';
+      msg.innerHTML='<div style="padding:16px;border:1px solid rgba(168,85,247,.35);border-radius:16px;background:#171025;text-align:center"><b>💳 Payment Pending</b><br><span>Pay ₹'+t.amount+' for '+t.credits+' Credits.</span><br><small>Order ID: '+t.id+'</small>'+
+        (upi?'<div style="margin:14px auto;padding:10px;background:#fff;border-radius:14px;width:min(260px,90%)"><img src="https://raw.githubusercontent.com/Bbofficia/FFGLORY/main/website/phonepe-qr.svg" alt="PhonePe QR" style="width:100%;display:block;border-radius:10px"></div><div style="font-weight:800;color:#22d3ee">SCAN & PAY WITH PHONEPE</div>':'')+
+        '<div style="margin-top:12px"><button class="mf-admin-btn" '+(upiLink?'onclick="location.href=\''+upiLink+'\'"':'disabled')+'>📲 Pay with UPI</button><button class="mf-admin-btn" style="margin:10px 0 0 8px" onclick="showPaymentStatus(\''+t.id+'\')">✓ I Have Paid / Check Status</button></div>'+
+        '<p style="color:#aaa;margin:10px 0 0">'+(upi?'After payment, Admin will verify it and your credits will be added.':'Payment UPI is not configured yet. Admin must configure PAYMENT_UPI_ID.')+'</p></div>';
       msg.style.color="#fff";
     }
   }catch(e){
@@ -610,6 +613,17 @@ async function buyPricingPlan(planId){
   }
 }
 
+
+async function showPaymentStatus(orderId){
+  try{
+    const data=await api("/api/transactions");
+    const rows=data.transactions||data||[];
+    const t=rows.find(x=>String(x.id)===String(orderId));
+    if(!t){ alert("Order not found."); return; }
+    const labels={payment_pending:"⏳ Payment Pending",completed:"✅ Payment Verified",payment_rejected:"❌ Payment Rejected",refunded:"💸 Refunded",refund_requested:"↩️ Refund Requested"};
+    alert((labels[t.status]||("Status: "+t.status))+"\nOrder ID: "+t.id+"\nCredits: "+(t.credits||0));
+  }catch(e){ alert("Status check failed: "+e.message); }
+}
 
 async function openCouponManager(){
   let box=document.getElementById("mf-coupon-panel"); if(box)box.remove();
