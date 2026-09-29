@@ -57,7 +57,7 @@ async function supabaseRequest(method, table, body){
       apikey:supabaseServiceKey,
       Authorization:'Bearer '+supabaseServiceKey,
       'Content-Type':'application/json',
-      Prefer: method==='GET' ? 'return=representation' : 'return=representation'
+      Prefer: method==='POST' ? 'resolution=merge-duplicates,return=representation' : 'return=representation'
     },
     body:body===undefined?undefined:JSON.stringify(body),
     signal:AbortSignal.timeout(10000)
@@ -70,6 +70,47 @@ async function supabaseRequest(method, table, body){
     throw new Error('Supabase request failed: '+r.status+(detail?' - '+detail:''));
   }
   return data;
+}
+async function getPersistentUser(email){
+  if(!supabaseUrl || !supabaseServiceKey) return null;
+  const rows=await supabaseRequest('GET','users?email=eq.'+encodeURIComponent(email)+'&select=id,email,name,password_hash,role,active,created_at&limit=1');
+  return Array.isArray(rows)&&rows[0]?rows[0]:null;
+}
+async function createPersistentUser(user){
+  if(!supabaseUrl || !supabaseServiceKey) return null;
+  const rows=await supabaseRequest('POST','users',[{
+    id:user.id,email:user.email,name:user.name||'',password_hash:user.passwordHash,
+    role:user.role||'user',active:user.active!==false,created_at:user.createdAt||new Date().toISOString()
+  }]);
+  return Array.isArray(rows)&&rows[0]?rows[0]:null;
+}
+async function createPersistentSession(tokenHashValue,user,expiresAt){
+  if(!supabaseUrl || !supabaseServiceKey) return null;
+  const rows=await supabaseRequest('POST','sessions',[{
+    token_hash:tokenHashValue,user_id:user.id,email:user.email,name:user.name||'',
+    role:user.role||'user',expires_at:new Date(expiresAt).toISOString()
+  }]);
+  return Array.isArray(rows)&&rows[0]?rows[0]:null;
+}
+async function getPersistentSession(tokenHashValue){
+  if(!supabaseUrl || !supabaseServiceKey) return null;
+  const rows=await supabaseRequest('GET','sessions?token_hash=eq.'+encodeURIComponent(tokenHashValue)+'&select=token_hash,user_id,email,name,role,expires_at&limit=1');
+  return Array.isArray(rows)&&rows[0]?rows[0]:null;
+}
+async function deletePersistentSession(tokenHashValue){
+  if(!supabaseUrl || !supabaseServiceKey) return false;
+  await supabaseRequest('DELETE','sessions?token_hash=eq.'+encodeURIComponent(tokenHashValue));
+  return true;
+}
+async function deletePersistentUserSessions(userId){
+  if(!supabaseUrl || !supabaseServiceKey) return false;
+  await supabaseRequest('DELETE','sessions?user_id=eq.'+encodeURIComponent(userId));
+  return true;
+}
+async function updatePersistentPassword(email,passwordHash){
+  if(!supabaseUrl || !supabaseServiceKey) return false;
+  await supabaseRequest('PATCH','users?email=eq.'+encodeURIComponent(email),{password_hash:passwordHash});
+  return true;
 }
 async function getPersistentPricing(){
   if(!supabaseUrl || !supabaseServiceKey) return null;
@@ -105,15 +146,34 @@ const sessions=new Map(Object.entries(readSessions()));
 function pruneSessions(){ const now=Date.now(); let changed=false; for(const [k,s] of sessions){ if(!s || s.expiresAt<=now){ sessions.delete(k); changed=true; } } if(changed) writeSessions(Object.fromEntries(sessions)); }
 setInterval(pruneSessions,60000).unref();
 
-function appAuth(req,res,next){
-  pruneSessions();
-  const got=(req.get('authorization')||'').replace(/^Bearer\s+/i,'');
-  if(appToken && got && Buffer.byteLength(got)===Buffer.byteLength(appToken) && crypto.timingSafeEqual(Buffer.from(got),Buffer.from(appToken))){ req.user={id:'service',email:'service'}; return next(); }
-  const key=tokenHash(got); const s=sessions.get(key);
-  if(!s || s.expiresAt<Date.now()){ sessions.delete(key); writeSessions(Object.fromEntries(sessions)); return res.status(401).json({error:'Authentication required'}); }
-  req.user=s.user; next();
+async function appAuth(req,res,next){
+  try{
+    pruneSessions();
+    const got=(req.get('authorization')||'').replace(/^Bearer\s+/i,'');
+    if(appToken && got && Buffer.byteLength(got)===Buffer.byteLength(appToken) && crypto.timingSafeEqual(Buffer.from(got),Buffer.from(appToken))){
+      req.user={id:'service',email:'service'}; return next();
+    }
+    const key=tokenHash(got);
+    const persistent=await getPersistentSession(key);
+    if(persistent){
+      const expires=Date.parse(persistent.expires_at);
+      if(Number.isFinite(expires) && expires>Date.now()){
+        req.user={id:persistent.user_id,email:persistent.email,name:persistent.name||'',role:persistent.role||'user'};
+        return next();
+      }
+      await deletePersistentSession(key);
+    }
+    const s=sessions.get(key);
+    if(!s || s.expiresAt<Date.now()){
+      sessions.delete(key); writeSessions(Object.fromEntries(sessions));
+      return res.status(401).json({error:'Authentication required'});
+    }
+    req.user=s.user; next();
+  }catch(e){
+    console.error('Auth session lookup failed:',e?.message||e);
+    return res.status(500).json({error:'Authentication service unavailable'});
+  }
 }
-
 async function ff(method,pathName,body){
   if(!accountKey||!masterKey) throw new Error('Server secrets are not configured');
   const u=new URL(base+pathName); u.searchParams.set('api_key',accountKey);
@@ -124,22 +184,57 @@ function proxy(pathName,method='GET',bodyMap=()=>undefined){ return async(req,re
 
 app.get('/health',(req,res)=>res.json({ok:true,service:'ffglory-backend',version:'4.2',environment:isProduction?'production':'development',upstreamConfigured:Boolean(accountKey&&masterKey)}));
 
-app.post('/auth/register',(req,res)=>{
-  const email=String(req.body?.email||'').trim().toLowerCase(); const password=String(req.body?.password||''); const name=String(req.body?.name||'').trim().slice(0,80);
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||password.length<8) return res.status(400).json({error:'Valid email and password of at least 8 characters are required'});
-  const users=readUsers(); if(users[email]) return res.status(409).json({error:'Account already exists'});
-  users[email]={id:crypto.randomUUID(),email,name,passwordHash:hashPassword(password),role:'user',active:true,createdAt:new Date().toISOString()}; writeUsers(users);
-  audit({user:{id:users[email].id,email}},'register',email); const token=sessionToken(); sessions.set(tokenHash(token),{user:{id:users[email].id,email,name,role:'user'},expiresAt:Date.now()+1000*60*60*24*30}); writeSessions(Object.fromEntries(sessions));
-  res.status(201).json({token,user:{id:users[email].id,email,name,role:'user'}});
+app.post('/auth/register',async(req,res)=>{
+  try{
+    const email=String(req.body?.email||'').trim().toLowerCase(); const password=String(req.body?.password||''); const name=String(req.body?.name||'').trim().slice(0,80);
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||password.length<8) return res.status(400).json({error:'Valid email and password of at least 8 characters are required'});
+    const persistentExisting=await getPersistentUser(email);
+    if(persistentExisting) return res.status(409).json({error:'Account already exists'});
+    const users=readUsers(); if(users[email]) return res.status(409).json({error:'Account already exists'});
+    const user={id:crypto.randomUUID(),email,name,passwordHash:hashPassword(password),role:'user',active:true,createdAt:new Date().toISOString()};
+    if(supabaseUrl && supabaseServiceKey) await createPersistentUser(user);
+    users[email]=user; writeUsers(users);
+    audit({user:{id:user.id,email}},'register',email);
+    const token=sessionToken(); const expiresAt=Date.now()+1000*60*60*24*30;
+    if(supabaseUrl && supabaseServiceKey) await createPersistentSession(tokenHash(token),user,expiresAt);
+    sessions.set(tokenHash(token),{user:{id:user.id,email,name,role:'user'},expiresAt}); writeSessions(Object.fromEntries(sessions));
+    res.status(201).json({token,user:{id:user.id,email,name,role:'user'}});
+  }catch(e){
+    console.error('Register failed:',e?.message||e);
+    res.status(500).json({error:'Unable to create account'});
+  }
 });
 
-app.post('/auth/login',(req,res)=>{
-  const email=String(req.body?.email||'').trim().toLowerCase(); const password=String(req.body?.password||''); const u=readUsers()[email];
-  if(!u||u.active===false||!verifyPassword(password,u.passwordHash)) return res.status(401).json({error:'Invalid email or password'});
-  const token=sessionToken(); sessions.set(tokenHash(token),{user:{id:u.id,email:u.email,name:u.name||'',role:u.role||'user'},expiresAt:Date.now()+1000*60*60*24*30}); writeSessions(Object.fromEntries(sessions));
-  audit({user:{id:u.id,email:u.email}},'login',email); res.json({token,user:{id:u.id,email:u.email,name:u.name||'',role:u.role||'user'}});
+app.post('/auth/login',async(req,res)=>{
+  try{
+    const email=String(req.body?.email||'').trim().toLowerCase(); const password=String(req.body?.password||'');
+    let u=await getPersistentUser(email);
+    if(!u){
+      const local=readUsers()[email];
+      if(local && local.active!==false){
+        u={id:local.id,email:local.email,name:local.name||'',password_hash:local.passwordHash,role:local.role||'user',active:local.active!==false};
+        if(supabaseUrl && supabaseServiceKey){
+          try{ await createPersistentUser(local); }catch(e){ console.error('Legacy user migration failed:',e?.message||e); }
+        }
+      }
+    }
+    if(!u||u.active===false||!verifyPassword(password,u.password_hash||u.passwordHash||'')) return res.status(401).json({error:'Invalid email or password'});
+    const user={id:u.id,email:u.email,name:u.name||'',role:u.role||'user'};
+    const token=sessionToken(); const expiresAt=Date.now()+1000*60*60*24*30;
+    if(supabaseUrl && supabaseServiceKey) await createPersistentSession(tokenHash(token),user,expiresAt);
+    sessions.set(tokenHash(token),{user,expiresAt}); writeSessions(Object.fromEntries(sessions));
+    audit({user:{id:user.id,email:user.email}},'login',email);
+    res.json({token,user});
+  }catch(e){
+    console.error('Login failed:',e?.message||e);
+    res.status(500).json({error:'Login service unavailable'});
+  }
 });
-app.post('/auth/logout',appAuth,(req,res)=>{const got=(req.get('authorization')||'').replace(/^Bearer\s+/i,''); sessions.delete(tokenHash(got)); writeSessions(Object.fromEntries(sessions)); res.json({ok:true});});
+app.post('/auth/logout',appAuth,async(req,res)=>{
+  const got=(req.get('authorization')||'').replace(/^Bearer\s+/i,''); const key=tokenHash(got);
+  try{ if(supabaseUrl && supabaseServiceKey) await deletePersistentSession(key); }catch(e){ console.error('Logout session cleanup failed:',e?.message||e); }
+  sessions.delete(key); writeSessions(Object.fromEntries(sessions)); res.json({ok:true});
+});
 app.get('/auth/me',appAuth,(req,res)=>res.json({user:req.user}));
 
 app.use('/api',(req,res,next)=>{ if(req.method==='GET' && req.path==='/pricing') return next(); appAuth(req,res,next); });
@@ -446,7 +541,20 @@ app.put('/admin/pricing',appAuth,adminOnly,async(req,res)=>{
   }
 });
 
-app.post('/auth/change-password',appAuth,(req,res)=>{ const u=readUsers()[req.user.email]; const old=String(req.body?.old_password||''); const next=String(req.body?.new_password||''); if(!u||!verifyPassword(old,u.passwordHash)) return res.status(401).json({error:'Current password is incorrect'}); if(next.length<8) return res.status(400).json({error:'New password must be at least 8 characters'}); u.passwordHash=hashPassword(next); const users=readUsers(); users[req.user.email]=u; writeUsers(users); for(const [k,s] of sessions){ if(s?.user?.id===u.id) sessions.delete(k); } writeSessions(Object.fromEntries(sessions)); audit(req,'password.change',req.user.email); res.json({ok:true}); });
+app.post('/auth/change-password',appAuth,async(req,res)=>{
+  try{
+    const old=String(req.body?.old_password||''); const next=String(req.body?.new_password||'');
+    if(next.length<8) return res.status(400).json({error:'New password must be at least 8 characters'});
+    const u=await getPersistentUser(req.user.email);
+    if(!u || !verifyPassword(old,u.password_hash||'')) return res.status(401).json({error:'Current password is incorrect'});
+    const newHash=hashPassword(next);
+    if(supabaseUrl && supabaseServiceKey) await updatePersistentPassword(req.user.email,newHash);
+    const users=readUsers(); if(users[req.user.email]){ users[req.user.email].passwordHash=newHash; writeUsers(users); }
+    if(supabaseUrl && supabaseServiceKey) await deletePersistentUserSessions(req.user.id);
+    for(const [k,s] of sessions){ if(s?.user?.id===req.user.id) sessions.delete(k); }
+    writeSessions(Object.fromEntries(sessions)); audit(req,'password.change',req.user.email); res.json({ok:true});
+  }catch(e){ console.error('Password change failed:',e?.message||e); res.status(500).json({error:'Unable to change password'}); }
+});
 
 function ensureAdmin(){
   const email=String(process.env.ADMIN_EMAIL||'').trim().toLowerCase(); const password=String(process.env.ADMIN_PASSWORD||'');
