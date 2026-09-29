@@ -292,7 +292,7 @@ async function showDashboard(){
           <div class="mf-dash-card mf-glory-card">
             <div class="mf-dash-icon">🏰</div>
             <h3>Glory Push</h3>
-            <p>Create a Guild Glory order and track all 4 worker slots.</p>
+            <p>Create a Guild Glory order and track your bot workers.</p>
             <button class="mf-glow-btn" onclick="openGloryManager()">🚀 Create Glory Order</button>
           </div>
         </div>
@@ -361,7 +361,6 @@ async function openGloryManager(){
         <div class="mf-glory-grid">
           <div><small style="color:#aaa">Guild ID</small><input id="mf-guild-id" placeholder="Enter Guild ID"></div>
           <div><small style="color:#aaa">Region</small><select id="mf-glory-region"><option value="">Select Region</option><option>India</option><option>Bangladesh</option><option>Pakistan</option><option>Other</option></select></div>
-          <div><small style="color:#aaa">Target Glory</small><input id="mf-target-glory" type="number" min="1" value="100"></div>
           <div><small style="color:#aaa">Bot Count</small><select id="mf-bot-count" onchange="updateGloryBotCost()"><option value="4">4 Bots — 1 Credit</option><option value="8">8 Bots — 2 Credits</option></select></div>
           <div style="grid-column:1/-1"><small style="color:#aaa">Credit Cost</small><input id="mf-credit-cost" type="number" min="1" value="1" readonly></div>
         </div>
@@ -385,7 +384,7 @@ async function createGloryOrder(){
   const creditCost=botCount===8?2:1;
   const costInput=document.getElementById("mf-credit-cost");
   if(costInput) costInput.value=creditCost;
-  const payload={guild_id:document.getElementById("mf-guild-id").value.trim(),region:document.getElementById("mf-glory-region").value,target_glory:Number(document.getElementById("mf-target-glory").value),bot_count:botCount,credit_cost:creditCost};
+  const payload={guild_id:document.getElementById("mf-guild-id").value.trim(),region:document.getElementById("mf-glory-region").value,bot_count:botCount,credit_cost:creditCost};
   msg.textContent="⏳ Checking credits and creating order...";
   try{
     const d=await api("/api/glory-orders",{method:"POST",body:JSON.stringify(payload)});
