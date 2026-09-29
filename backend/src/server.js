@@ -421,7 +421,11 @@ app.post('/api/transactions',async(req,res)=>{
   res.status(201).json({transaction:row,upiId:String(process.env.PAYMENT_UPI_ID||"")});
 });
 
-app.get('/api/transactions',(req,res)=>{
+app.get('/api/transactions',async(req,res)=>{
+  try{
+    const persistent=await getPersistentTransactions(userKey(req));
+    if(persistent) return res.json({transactions:persistent});
+  }catch(e){}
   const rows=readJson("transactions.json",[]);
   res.json({transactions:rows.filter(x=>String(x.userId)===String(userKey(req)))});
 });
