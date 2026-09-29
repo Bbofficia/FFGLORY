@@ -426,7 +426,7 @@ app.get('/api/transactions',(req,res)=>{
   res.json({transactions:rows.filter(x=>String(x.userId)===String(userKey(req)))});
 });
 
-app.post('/api/transactions/refund-request',(req,res)=>{
+app.post('/api/transactions/refund-request',async(req,res)=>{
   const rows=readJson("transactions.json",[]);
   const id=String(req.body?.transaction_id||"");
   const row=rows.find(x=>String(x.id)===id&&String(x.userId)===String(userKey(req)));
@@ -441,7 +441,7 @@ app.post('/api/transactions/refund-request',(req,res)=>{
   res.json({ok:true,transaction:row});
 });
 
-app.post('/api/transactions/cancel',(req,res)=>{
+app.post('/api/transactions/cancel',async(req,res)=>{
   const rows=readJson("transactions.json",[]);
   const id=String(req.body?.transaction_id||"");
   const row=rows.find(x=>String(x.id)===id&&String(x.userId)===String(userKey(req)));
@@ -645,7 +645,7 @@ app.patch('/admin/coupons/:id',appAuth,adminOnly,(req,res)=>{
   res.json({ok:true,coupon:row});
 });
 app.get('/admin/transactions',appAuth,adminOnly,(req,res)=>res.json({transactions:readJson("transactions.json",[])}));
-app.patch('/admin/transactions/:id/verify',appAuth,adminOnly,(req,res)=>{
+app.patch('/admin/transactions/:id/verify',appAuth,adminOnly,async(req,res)=>{
   const rows=readJson("transactions.json",[]);
   const row=rows.find(x=>String(x.id)===String(req.params.id));
   if(!row)return res.status(404).json({error:"Transaction not found"});
@@ -658,7 +658,7 @@ app.patch('/admin/transactions/:id/verify',appAuth,adminOnly,(req,res)=>{
   audit(req,"admin.transaction.verify",row.id);
   res.json({ok:true,transaction:row});
 });
-app.patch('/admin/transactions/:id/reject',appAuth,adminOnly,(req,res)=>{
+app.patch('/admin/transactions/:id/reject',appAuth,adminOnly,async(req,res)=>{
   const rows=readJson("transactions.json",[]);
   const row=rows.find(x=>String(x.id)===String(req.params.id));
   if(!row)return res.status(404).json({error:"Transaction not found"});
@@ -686,7 +686,7 @@ app.patch('/admin/transactions/:id/refund',appAuth,adminOnly,(req,res)=>{
   res.json({ok:true,refundedCredits:Number(row.credits||0),transaction:row});
 });
 
-app.patch('/admin/transactions/:id',appAuth,adminOnly,(req,res)=>{
+app.patch('/admin/transactions/:id',appAuth,adminOnly,async(req,res)=>{
   const rows=readJson("transactions.json",[]);
   const row=rows.find(x=>String(x.id)===String(req.params.id));
   if(!row)return res.status(404).json({error:"Transaction not found"});
