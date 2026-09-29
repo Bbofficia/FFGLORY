@@ -338,7 +338,7 @@ app.post('/api/groups',async(req,res)=>{
     name:String(req.body?.name||"My Guild").trim().slice(0,80),
     region:String(req.body?.region||"").trim().slice(0,40),
     clan_id:String(req.body?.clan_id||"").trim().slice(0,80),
-    status:"active",createdAt:new Date().toISOString()};
+    status:"active",expiresAt:req.body?.expires_at||null,usageLimit:Math.max(1,Number(req.body?.usage_limit||1)),usageCount:0,createdAt:new Date().toISOString()};
   if(!row.clan_id)return res.status(400).json({error:"Guild ID is required"});
   try{
     if(supabaseUrl && supabaseServiceKey){
@@ -387,7 +387,9 @@ app.post('/api/coupons/redeem',async(req,res)=>{
     const rows=readJson("coupons.json",[]); row=rows.find(x=>x.code===code&&x.status==="active");
   }
   if(!row)return res.status(404).json({error:"Coupon not found"});
-  row.status="redeemed";row.redeemedBy=userKey(req);row.redeemedAt=new Date().toISOString();
+  if(row.expiresAt && new Date(row.expiresAt).getTime()<=Date.now()){row.status="expired";try{await updatePersistentCoupon(row);}catch(e){}return res.status(400).json({error:"Coupon expired"});}
+  if(Number(row.usageCount||0)>=Number(row.usageLimit||1)){row.status="used";try{await updatePersistentCoupon(row);}catch(e){}return res.status(400).json({error:"Coupon usage limit reached"});}
+  row.usageCount=Number(row.usageCount||0)+1;row.redeemedBy=userKey(req);row.redeemedAt=new Date().toISOString();if(row.usageCount>=Number(row.usageLimit||1))row.status="redeemed";
   const rows=readJson("coupons.json",[]); const local=rows.find(x=>String(x.id)===String(row.id)); if(local) Object.assign(local,row); else rows.push(row); writeJson("coupons.json",rows);
   try{ await updatePersistentCoupon(row); }catch(e){}
   res.json({ok:true,coupon:row});
@@ -513,17 +515,17 @@ async function getAllPersistentTransactions(){
 async function getPersistentCoupons(userId){
   if(!supabaseUrl||!supabaseServiceKey) return null;
   const q=userId?('user_id=eq.'+encodeURIComponent(userId)+'&'): '';
-  const rows=await supabaseRequest('GET','coupons?'+q+'select=id,user_id,code,basic_credits,premium_credits,status,redeemed_by,redeemed_at,created_at&order=created_at.desc');
-  return Array.isArray(rows)?rows.map(x=>({id:x.id,userId:x.user_id,code:x.code,basic_credits:Number(x.basic_credits||0),premium_credits:Number(x.premium_credits||0),status:x.status||'active',redeemedBy:x.redeemed_by||undefined,redeemedAt:x.redeemed_at||undefined,createdAt:x.created_at})):null;
+  const rows=await supabaseRequest('GET','coupons?'+q+'select=id,user_id,code,basic_credits,premium_credits,status,redeemed_by,redeemed_at,created_at,expires_at,usage_limit,usage_count&order=created_at.desc');
+  return Array.isArray(rows)?rows.map(x=>({id:x.id,userId:x.user_id,code:x.code,basic_credits:Number(x.basic_credits||0),premium_credits:Number(x.premium_credits||0),status:x.status||'active',redeemedBy:x.redeemed_by||undefined,redeemedAt:x.redeemed_at||undefined,createdAt:x.created_at,expiresAt:x.expires_at||undefined,usageLimit:Number(x.usage_limit||1),usageCount:Number(x.usage_count||0)})):null;
 }
 async function savePersistentCoupon(row){
   if(!supabaseUrl||!supabaseServiceKey) return false;
-  const rows=await supabaseRequest('POST','coupons',[{id:row.id,user_id:row.userId,code:row.code,basic_credits:Number(row.basic_credits||0),premium_credits:Number(row.premium_credits||0),status:row.status||'active',redeemed_by:row.redeemedBy||null,redeemed_at:row.redeemedAt||null,created_at:row.createdAt||new Date().toISOString()}]);
+  const rows=await supabaseRequest('POST','coupons',[{id:row.id,user_id:row.userId,code:row.code,basic_credits:Number(row.basic_credits||0),premium_credits:Number(row.premium_credits||0),status:row.status||'active',redeemed_by:row.redeemedBy||null,redeemed_at:row.redeemedAt||null,created_at:row.createdAt||new Date().toISOString(),expires_at:row.expiresAt||null,usage_limit:Number(row.usageLimit||1),usage_count:Number(row.usageCount||0)}]);
   return Array.isArray(rows)&&rows.length>0;
 }
 async function updatePersistentCoupon(row){
   if(!supabaseUrl||!supabaseServiceKey) return false;
-  await supabaseRequest('PATCH','coupons?id=eq.'+encodeURIComponent(row.id),{user_id:row.userId,code:row.code,basic_credits:Number(row.basic_credits||0),premium_credits:Number(row.premium_credits||0),status:row.status||'active',redeemed_by:row.redeemedBy||null,redeemed_at:row.redeemedAt||null,created_at:row.createdAt||new Date().toISOString()});
+  await supabaseRequest('PATCH','coupons?id=eq.'+encodeURIComponent(row.id),{user_id:row.userId,code:row.code,basic_credits:Number(row.basic_credits||0),premium_credits:Number(row.premium_credits||0),status:row.status||'active',redeemed_by:row.redeemedBy||null,redeemed_at:row.redeemedAt||null,created_at:row.createdAt||new Date().toISOString(),expires_at:row.expiresAt||null,usage_limit:Number(row.usageLimit||1),usage_count:Number(row.usageCount||0)});
   return true;
 }
 
