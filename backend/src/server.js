@@ -528,7 +528,9 @@ app.post('/api/glory-orders',async(req,res)=>{
     if(supabaseUrl&&supabaseServiceKey) await createPersistentGloryOrder(order);
   }catch(e){}
   rows.push(order);
-  transactions.push({id:crypto.randomUUID(),userId,planId:"glory-debit",planName:"Glory Order "+id.slice(0,8),amount:0,credits:-creditCost,status:"completed",type:"glory_debit",orderId:id,createdAt:now});
+  const debitTx={id:crypto.randomUUID(),userId,planId:"glory-debit",planName:"Glory Order "+id.slice(0,8),amount:0,credits:-creditCost,status:"completed",type:"glory_debit",orderId:id,createdAt:now};
+  transactions.push(debitTx);
+  try{ await savePersistentTransaction(debitTx); }catch(e){}
   writeJson("glory-orders.json",rows); writeJson("transactions.json",transactions);
   audit(req,"glory.order.create",id);
   res.status(201).json({ok:true,order,balance:balance-creditCost});
