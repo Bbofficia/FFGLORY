@@ -315,7 +315,7 @@ async function showDashboard(){
 
   dash.style.display="block";
   loadInlineGroups();
-  loadCreditBalance();
+  startCreditAutoRefresh();
 
   const groupsBtn = document.querySelector(".mf-groups-open");
   if(groupsBtn){
@@ -428,6 +428,14 @@ function renderGloryOrder(o){
 async function cancelGloryOrder(id){
   if(!confirm("Cancel this Glory order?"))return;
   try{await api("/api/glory-orders/"+encodeURIComponent(id)+"/cancel",{method:"POST"});await loadGloryOrders();alert("Order cancelled.");}catch(e){alert("❌ "+e.message);}
+}
+
+let mfCreditRefreshTimer=null;
+function startCreditAutoRefresh(){
+  if(mfCreditRefreshTimer) clearInterval(mfCreditRefreshTimer);
+  loadCreditBalance();
+  mfCreditRefreshTimer=setInterval(()=>{ if(document.visibilityState==="visible") loadCreditBalance(); },15000);
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") loadCreditBalance(); },{once:false});
 }
 
 async function loadCreditBalance(){
