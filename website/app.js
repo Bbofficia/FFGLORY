@@ -362,7 +362,8 @@ async function openGloryManager(){
           <div><small style="color:#aaa">Guild ID</small><input id="mf-guild-id" placeholder="Enter Guild ID"></div>
           <div><small style="color:#aaa">Region</small><select id="mf-glory-region"><option value="">Select Region</option><option>India</option><option>Bangladesh</option><option>Pakistan</option><option>Other</option></select></div>
           <div><small style="color:#aaa">Target Glory</small><input id="mf-target-glory" type="number" min="1" value="100"></div>
-          <div><small style="color:#aaa">Credit Cost</small><input id="mf-credit-cost" type="number" min="1" value="1"></div>
+          <div><small style="color:#aaa">Bot Count</small><select id="mf-bot-count" onchange="updateGloryBotCost()"><option value="4">4 Bots — 1 Credit</option><option value="8">8 Bots — 2 Credits</option></select></div>
+          <div style="grid-column:1/-1"><small style="color:#aaa">Credit Cost</small><input id="mf-credit-cost" type="number" min="1" value="1" readonly></div>
         </div>
         <button class="mf-glow-btn" style="width:100%;margin-top:12px" onclick="createGloryOrder()">🚀 Start Glory Order</button>
         <div id="mf-glory-msg" style="margin-top:10px"></div>
@@ -372,9 +373,19 @@ async function openGloryManager(){
     </div>`;
   document.body.appendChild(box); loadGloryOrders();
 }
+function updateGloryBotCost(){
+  const bots=Number(document.getElementById("mf-bot-count")?.value||4);
+  const cost=bots===8?2:1;
+  const input=document.getElementById("mf-credit-cost");
+  if(input) input.value=cost;
+}
 async function createGloryOrder(){
   const msg=document.getElementById("mf-glory-msg");
-  const payload={guild_id:document.getElementById("mf-guild-id").value.trim(),region:document.getElementById("mf-glory-region").value,target_glory:Number(document.getElementById("mf-target-glory").value),credit_cost:Number(document.getElementById("mf-credit-cost").value)};
+  const botCount=Number(document.getElementById("mf-bot-count")?.value||4);
+  const creditCost=botCount===8?2:1;
+  const costInput=document.getElementById("mf-credit-cost");
+  if(costInput) costInput.value=creditCost;
+  const payload={guild_id:document.getElementById("mf-guild-id").value.trim(),region:document.getElementById("mf-glory-region").value,target_glory:Number(document.getElementById("mf-target-glory").value),bot_count:botCount,credit_cost:creditCost};
   msg.textContent="⏳ Checking credits and creating order...";
   try{
     const d=await api("/api/glory-orders",{method:"POST",body:JSON.stringify(payload)});
@@ -392,7 +403,7 @@ async function loadGloryOrders(){
 function renderGloryOrder(o){
   const workers=(o.workers||[]).map(w=>'<div class="mf-worker-row"><b>Bot '+w.slot+'</b><div><div class="mf-worker-bar"><span style="width:'+Number(w.progress||0)+'%"></span></div><small class="mf-status">'+String(w.status||"waiting")+'</small></div><small>'+Number(w.progress||0)+'%</small></div>').join("");
   const cancel=!["completed","cancelled","failed"].includes(o.status)?'<button class="mf-admin-btn" style="margin-top:12px" onclick="cancelGloryOrder(\''+o.id+'\')">🛑 Cancel Order</button>':"";
-  return '<div class="mf-glory-order"><div style="display:flex;justify-content:space-between;gap:10px"><div><b>🏰 Guild '+String(o.guildId)+'</b><br><small style="color:#aaa">'+String(o.region)+' • Target '+Number(o.targetGlory)+' • Cost '+Number(o.creditCost)+' Credits</small></div><span class="mf-status">'+String(o.status)+'</span></div><div style="margin-top:12px"><div style="display:flex;justify-content:space-between"><small>Progress</small><b>'+Number(o.progress||0)+'%</b></div><div class="mf-worker-bar"><span style="width:'+Number(o.progress||0)+'%"></span></div><small style="color:#aaa">Current Glory: '+Number(o.currentGlory||0)+' / '+Number(o.targetGlory||0)+'</small></div><div style="margin-top:10px"><b>🤖 4 Worker Slots</b>'+workers+'</div>'+cancel+'</div>';
+  return '<div class="mf-glory-order"><div style="display:flex;justify-content:space-between;gap:10px"><div><b>🏰 Guild '+String(o.guildId)+'</b><br><small style="color:#aaa">'+String(o.region)+' • Target '+Number(o.targetGlory)+' • '+Number(o.botCount||4)+' Bots • Cost '+Number(o.creditCost)+' Credits</small></div><span class="mf-status">'+String(o.status)+'</span></div><div style="margin-top:12px"><div style="display:flex;justify-content:space-between"><small>Progress</small><b>'+Number(o.progress||0)+'%</b></div><div class="mf-worker-bar"><span style="width:'+Number(o.progress||0)+'%"></span></div><small style="color:#aaa">Current Glory: '+Number(o.currentGlory||0)+' / '+Number(o.targetGlory||0)+'</small></div><div style="margin-top:10px"><b>🤖 4 Worker Slots</b>'+workers+'</div>'+cancel+'</div>';
 }
 async function cancelGloryOrder(id){
   if(!confirm("Cancel this Glory order?"))return;
