@@ -75,7 +75,7 @@ footer{text-align:center;color:#aaa4b8;padding:35px 20px}
 @media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){body::before{opacity:.32;filter:brightness(1) saturate(1.12);background-position:center top}body::after{background:linear-gradient(180deg,rgba(5,3,11,0),rgba(5,3,11,.08))}.topbar{background:rgba(5,3,11,.48);text-align:center}.brand{font-size:21px}.hero{min-height:65vh}.hero p{color:#eee}.grid{grid-template-columns:1fr}.section{padding:50px 16px}.bottom-nav a{font-size:11px}.bottom-nav{bottom:10px}.stat-large{width:96px}.stat-medium{width:84px}.stat-small{width:74px}#mf-dashboard{padding:22px 12px 105px!important}#mf-dashboard .grid{grid-template-columns:1fr;gap:14px}#mf-dashboard .grid>.card{min-height:175px}#mf-dashboard .grid>.card h3{font-size:23px}#mf-dashboard .grid>.card p{font-size:16px}#mf-dashboard button,#mf-dashboard .btn,#mf-dashboard .mf-admin-btn{min-height:50px;font-size:16px}}
 
-/* Premium dashboard layout inspired by the MafiaFF Glory pricing screen */
+/* Premium FFMAFIA.PANEL dashboard layout */
 .mf-dash-wrap{max-width:920px;margin:0 auto;padding:6px 0 12px}
 .mf-dash-hero{text-align:center;padding:28px 12px 24px}
 .mf-dash-kicker{font-size:13px;font-weight:900;letter-spacing:4px;color:#c7a5ff;margin-bottom:12px}
@@ -126,8 +126,8 @@ footer{text-align:center;color:#aaa4b8;padding:35px 20px}
 }
 
 /* FFMAFIA.PANEL animated neon edge */
-.mf-dash-card,.card,.pricing-card,.mf-wallet-card,.mf-product-card,.mf-glory-box,.mf-box,.mf-admin-stat{position:relative;isolation:isolate}
-.mf-dash-card::before,.card::before,.pricing-card::before,.mf-wallet-card::before,.mf-product-card::before,.mf-glory-box::before,.mf-box::before,.mf-admin-stat::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:linear-gradient(90deg,#a855f7,#22d3ee,#ffd166,#a855f7);background-size:300% 100%;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:ffNeon 4s linear infinite;pointer-events:none;z-index:3;opacity:.9}
+.mf-dash-card,.card,.pricing-card,.mf-wallet-card,.mf-product-card,.mf-product-box,.mf-box,.mf-admin-stat{position:relative;isolation:isolate}
+.mf-dash-card::before,.card::before,.pricing-card::before,.mf-wallet-card::before,.mf-product-card::before,.mf-product-box::before,.mf-box::before,.mf-admin-stat::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:linear-gradient(90deg,#a855f7,#22d3ee,#ffd166,#a855f7);background-size:300% 100%;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:ffNeon 4s linear infinite;pointer-events:none;z-index:3;opacity:.9}
 .mf-product-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
 .mf-product-card{padding:18px;border-radius:20px;background:linear-gradient(145deg,rgba(18,12,30,.96),rgba(8,20,30,.96));border:1px solid rgba(255,255,255,.12);overflow:hidden}
 .mf-product-card img{width:100%;height:130px;object-fit:cover;border-radius:14px;margin-bottom:12px}
