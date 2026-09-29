@@ -439,12 +439,10 @@ app.post('/api/glory-orders',(req,res)=>{
   const userId=userKey(req);
   const guildId=String(req.body?.guild_id||"").trim();
   const region=String(req.body?.region||"").trim();
-  const targetGlory=Math.max(1,Math.floor(Number(req.body?.target_glory||0)));
   const botCount=Math.floor(Number(req.body?.bot_count||4));
   const creditCost=botCount===8?2:botCount===4?1:0;
   if(guildId.length<3) return res.status(400).json({error:"Valid Guild ID is required"});
   if(!region) return res.status(400).json({error:"Region is required"});
-  if(!Number.isFinite(targetGlory)||targetGlory<1) return res.status(400).json({error:"Target glory must be greater than 0"});
   if(![4,8].includes(botCount)) return res.status(400).json({error:"Bot count must be 4 or 8"});
   if(!Number.isFinite(creditCost)||creditCost<1) return res.status(400).json({error:"Invalid bot credit cost"});
   const active=rows.find(x=>String(x.userId)===String(userId)&&x.guildId===guildId&&!["completed","cancelled","failed"].includes(x.status));
@@ -454,7 +452,7 @@ app.post('/api/glory-orders',(req,res)=>{
   const id=crypto.randomUUID();
   const now=new Date().toISOString();
   const order={
-    id,userId,guildId,region,targetGlory,botCount,creditCost,currentGlory:0,progress:0,status:"queued",
+    id,userId,guildId,region,botCount,creditCost,currentGlory:0,progress:0,status:"queued",
     createdAt:now,updatedAt:now,
     workers:Array.from({length:botCount},(_,i)=>({slot:i+1,status:"waiting",progress:0}))
   };
@@ -490,8 +488,8 @@ app.patch('/admin/glory-orders/:id',(req,res)=>{
   if(typeof req.body?.status==="string" && allowed.includes(req.body.status)) row.status=req.body.status;
   if(req.body?.current_glory!==undefined){
     const n=Math.max(0,Math.floor(Number(req.body.current_glory)));
-    row.currentGlory=Math.min(n,row.targetGlory);
-    row.progress=Math.min(100,Math.round(row.currentGlory/row.targetGlory*100));
+    row.currentGlory=n;
+    row.progress=0;
   }
   if(Array.isArray(req.body?.workers)){
     row.workers=req.body.workers.slice(0,4).map((w,i)=>({slot:i+1,status:String(w.status||"waiting"),progress:Math.max(0,Math.min(100,Number(w.progress||0)))}));
