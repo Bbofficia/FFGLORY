@@ -123,7 +123,13 @@ const defaultPricing=[
   {id:"pro",name:"Pro",price:399,credits:600}
 ];
 
-app.get('/api/me',(req,res)=>res.json({user:req.user}));
+app.get('/api/me',(req,res)=>{
+  const transactions=readJson("transactions.json",[]);
+  const credits=transactions
+    .filter(x=>String(x.userId)===String(userKey(req))&&x.status==="completed")
+    .reduce((sum,x)=>sum+Number(x.credits||0),0);
+  res.json({user:req.user,credits});
+});
 
 app.get('/api/pricing',(req,res)=>{
   res.json({plans:readJson("pricing.json",defaultPricing)});
@@ -299,6 +305,20 @@ app.patch('/admin/coupons/:id',appAuth,adminOnly,(req,res)=>{
   res.json({ok:true,coupon:row});
 });
 app.get('/admin/transactions',appAuth,adminOnly,(req,res)=>res.json({transactions:readJson("transactions.json",[])}));
+app.patch('/admin/transactions/:id/refund',appAuth,adminOnly,(req,res)=>{
+  const rows=readJson("transactions.json",[]);
+  const row=rows.find(x=>String(x.id)===String(req.params.id));
+  if(!row)return res.status(404).json({error:"Transaction not found"});
+  if(row.status==="refunded")return res.status(400).json({error:"Credits already refunded"});
+  if(row.status!=="completed")return res.status(400).json({error:"Only completed transactions can be refunded"});
+  row.status="refunded";
+  row.refundedAt=new Date().toISOString();
+  row.refundedBy=req.user.id;
+  writeJson("transactions.json",rows);
+  audit(req,"admin.transaction.refund",row.id);
+  res.json({ok:true,refundedCredits:Number(row.credits||0),transaction:row});
+});
+
 app.patch('/admin/transactions/:id',appAuth,adminOnly,(req,res)=>{
   const rows=readJson("transactions.json",[]);
   const row=rows.find(x=>String(x.id)===String(req.params.id));
