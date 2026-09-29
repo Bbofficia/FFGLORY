@@ -515,42 +515,68 @@ async function openDashboardApi(title, path){
   if(path === "/api/groups"){ openGroupsManager(); return; }
   try{
     const data = await api(path);
-
     let box = document.getElementById("mf-api-result");
     if(!box){
       box = document.createElement("div");
       box.id = "mf-api-result";
       box.style.cssText =
-        "position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.82);"+
-        "backdrop-filter:blur(10px);display:flex;align-items:center;"+
-        "justify-content:center;padding:20px";
-
+        "position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.82);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:20px";
       box.innerHTML =
-        '<div style="width:min(700px,100%);max-height:85vh;overflow:auto;'+
-        'background:#100b1d;border:1px solid rgba(168,85,247,.5);'+
-        'border-radius:24px;padding:22px;color:white">'+
-        '<h2 id="mf-api-title"></h2>'+
-        '<pre id="mf-api-data" style="white-space:pre-wrap;word-break:break-word;'+
-        'font-size:13px;line-height:1.5"></pre>'+
-        '<button class="btn" onclick="document.getElementById(\'mf-api-result\').remove()">Close</button>'+
-        '</div>';
-
+        '<div style="width:min(700px,100%);max-height:85vh;overflow:auto;background:#100b1d;border:1px solid rgba(168,85,247,.5);border-radius:24px;padding:22px;color:white">'+
+        '<h2 id="mf-api-title"></h2><div id="mf-api-data" style="font-size:13px;line-height:1.5"></div>'+
+        '<button class="btn" style="margin-top:14px" onclick="document.getElementById(\'mf-api-result\').remove()">Close</button></div>';
       document.body.appendChild(box);
     }
-
     document.getElementById("mf-api-title").textContent = title;
     const dataBox=document.getElementById("mf-api-data");
-    if(path === "/api/transactions"){
+
+    if(path === "/api/coupons"){
+      const rows=data.coupons||[];
+      dataBox.innerHTML =
+        '<div style="padding:16px;border-radius:18px;background:#171025;border:1px solid rgba(168,85,247,.35)">'+
+        '<div style="font-size:18px;font-weight:800">🎟️ Redeem Coupon</div>'+
+        '<p style="color:#aaa;margin:6px 0 14px">Enter your coupon code below.</p>'+
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
+        '<input id="mf-coupon-code" placeholder="Enter coupon code" style="flex:1;min-width:200px;padding:12px;border-radius:12px;background:#080611;color:white;border:1px solid #a855f7">'+
+        '<button class="mf-admin-btn" onclick="redeemCustomerCoupon()">🎁 Redeem Coupon</button></div>'+
+        '<p id="mf-coupon-msg" style="margin:10px 0"></p></div>'+
+        '<div style="margin-top:18px"><h3>📋 My Coupons</h3>'+
+        (rows.length?rows.map(c=>'<div style="padding:12px;margin:8px 0;border-radius:14px;background:#100b1d;border:1px solid rgba(168,85,247,.25)"><b>'+c.code+'</b><br><small>Status: '+c.status+'</small></div>').join(""):'<div style="color:#aaa">No coupons found yet.</div>')+
+        '</div>';
+    }else if(path === "/api/transactions"){
       const rows=data.transactions||[];
       dataBox.innerHTML=rows.length?rows.map(t=>`<div style="padding:14px;margin:10px 0;border:1px solid rgba(168,85,247,.35);border-radius:16px;background:#171025"><b>${t.planName}</b><br>💰 ₹${t.amount} &nbsp; 🎟️ ${Number(t.credits||0)} Credits<br><small>${t.status}</small> ${t.status==="completed"?`<button class="mf-admin-btn" style="margin-left:8px" onclick="customerRefundRequest('${t.id}',${Number(t.credits||0)})">💰 Request Credit Refund</button>`:""}</div>`).join(""):"No transactions yet.";
     }else{
       dataBox.textContent=JSON.stringify(data,null,2);
     }
-
   }catch(e){
     alert(title + " error: " + e.message);
   }
 }
+
+async function redeemCustomerCoupon(){
+  const input=document.getElementById("mf-coupon-code");
+  const msg=document.getElementById("mf-coupon-msg");
+  const code=(input?.value||"").trim();
+  if(!code){ if(msg) msg.textContent="⚠️ Enter a coupon code"; return; }
+  try{
+    const d=await api("/api/coupons/redeem",{method:"POST",body:JSON.stringify({code})});
+    if(msg){msg.textContent="✅ Coupon redeemed successfully!";msg.style.color="#22d3ee";}
+    setTimeout(()=>openDashboardApi("Coupons","/api/coupons"),500);
+  }catch(e){
+    if(msg){msg.textContent="❌ "+e.message;msg.style.color="#ff6b6b";}
+  }
+}
+
+async function customerRefundRequest(id,credits){
+  if(!confirm("Request refund of "+credits+" credits?"))return;
+  try{
+    await api("/api/transactions/refund-request",{method:"POST",body:JSON.stringify({transaction_id:id})});
+    alert("✅ Refund request sent to Admin");
+    openDashboardApi("Transactions","/api/transactions");
+  }catch(e){alert("❌ Refund request failed: "+e.message);}
+}
+
 
 
 let panelPricingCache=[];
