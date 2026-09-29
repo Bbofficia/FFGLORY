@@ -495,6 +495,21 @@ async function savePersistentTransaction(row){
   const rows=await supabaseRequest('POST','transactions',[{id:row.id,user_id:row.userId,plan_id:row.planId||'',plan_name:row.planName||'',amount:Number(row.amount||0),credits:Number(row.credits||0),status:row.status||'pending',type:row.type||'payment',order_id:row.orderId||null,created_at:row.createdAt||new Date().toISOString()}]);
   return Array.isArray(rows)&&rows.length>0;
 }
+async function getPersistentTransactionById(id){
+  if(!supabaseUrl||!supabaseServiceKey) return null;
+  const rows=await supabaseRequest('GET','transactions?id=eq.'+encodeURIComponent(id)+'&select=id,user_id,plan_id,plan_name,amount,credits,status,type,order_id,created_at');
+  if(!Array.isArray(rows)||!rows[0]) return null;
+  const x=rows[0];
+  return {id:x.id,userId:x.user_id,planId:x.plan_id||'',planName:x.plan_name||'',amount:Number(x.amount||0),credits:Number(x.credits||0),status:x.status||'pending',type:x.type||'payment',orderId:x.order_id||undefined,createdAt:x.created_at};
+}
+async function updatePersistentTransaction(row){
+  if(!supabaseUrl||!supabaseServiceKey) return false;
+  await supabaseRequest('PATCH','transactions?id=eq.'+encodeURIComponent(row.id),{
+    user_id:row.userId,plan_id:row.planId||'',plan_name:row.planName||'',amount:Number(row.amount||0),credits:Number(row.credits||0),status:row.status||'pending',type:row.type||'payment',order_id:row.orderId||null,created_at:row.createdAt||new Date().toISOString()
+  });
+  return true;
+}
+
 async function calculateCreditBalance(userId){
   try{
     const rows=await getPersistentTransactions(userId);
@@ -663,47 +678,49 @@ app.patch('/admin/coupons/:id',appAuth,adminOnly,(req,res)=>{
 app.get('/admin/transactions',appAuth,adminOnly,(req,res)=>res.json({transactions:readJson("transactions.json",[])}));
 app.patch('/admin/transactions/:id/verify',appAuth,adminOnly,async(req,res)=>{
   const rows=readJson("transactions.json",[]);
-  const row=rows.find(x=>String(x.id)===String(req.params.id));
+  let row=rows.find(x=>String(x.id)===String(req.params.id));
+  if(!row) row=await getPersistentTransactionById(req.params.id);
   if(!row)return res.status(404).json({error:"Transaction not found"});
   if(row.status!=="payment_pending")return res.status(400).json({error:"Only pending payments can be verified"});
-  row.status="completed";
-  row.verifiedAt=new Date().toISOString();
-  row.verifiedBy=req.user.id;
+  row.status="completed"; row.verifiedAt=new Date().toISOString(); row.verifiedBy=req.user.id;
+  const local=rows.find(x=>String(x.id)===String(req.params.id));
+  if(local) Object.assign(local,row);
+  else rows.push(row);
   writeJson("transactions.json",rows);
-  try{ await savePersistentTransaction(row); }catch(e){}
+  try{ await updatePersistentTransaction(row); }catch(e){}
   audit(req,"admin.transaction.verify",row.id);
   res.json({ok:true,transaction:row});
 });
 app.patch('/admin/transactions/:id/reject',appAuth,adminOnly,async(req,res)=>{
   const rows=readJson("transactions.json",[]);
-  const row=rows.find(x=>String(x.id)===String(req.params.id));
+  let row=rows.find(x=>String(x.id)===String(req.params.id));
+  if(!row) row=await getPersistentTransactionById(req.params.id);
   if(!row)return res.status(404).json({error:"Transaction not found"});
   if(row.status!=="payment_pending")return res.status(400).json({error:"Only pending payments can be rejected"});
-  row.status="payment_rejected";
-  row.rejectedAt=new Date().toISOString();
-  row.rejectedBy=req.user.id;
+  row.status="payment_rejected"; row.rejectedAt=new Date().toISOString(); row.rejectedBy=req.user.id;
+  const local=rows.find(x=>String(x.id)===String(req.params.id));
+  if(local) Object.assign(local,row); else rows.push(row);
   writeJson("transactions.json",rows);
-  try{ await savePersistentTransaction(row); }catch(e){}
+  try{ await updatePersistentTransaction(row); }catch(e){}
   audit(req,"admin.transaction.reject",row.id);
   res.json({ok:true,transaction:row});
 });
-
 app.patch('/admin/transactions/:id/refund',appAuth,adminOnly,async(req,res)=>{
   const rows=readJson("transactions.json",[]);
   let row=rows.find(x=>String(x.id)===String(req.params.id));
+  if(!row) row=await getPersistentTransactionById(req.params.id);
   if(!row)return res.status(404).json({error:"Transaction not found"});
   if(row.type==="glory_debit"||row.type==="glory_refund")return res.status(400).json({error:"This transaction type cannot be refunded"});
   if(row.status==="refunded")return res.status(400).json({error:"Credits already refunded"});
   if(row.status!=="completed")return res.status(400).json({error:"Only completed transactions can be refunded"});
-  row.status="refunded";
-  row.refundedAt=new Date().toISOString();
-  row.refundedBy=req.user.id;
+  row.status="refunded"; row.refundedAt=new Date().toISOString(); row.refundedBy=req.user.id;
+  const local=rows.find(x=>String(x.id)===String(req.params.id));
+  if(local) Object.assign(local,row); else rows.push(row);
   writeJson("transactions.json",rows);
-  try{ await savePersistentTransaction(row); }catch(e){}
+  try{ await updatePersistentTransaction(row); }catch(e){}
   audit(req,"admin.transaction.refund",row.id);
   res.json({ok:true,refundedCredits:Number(row.credits||0),transaction:row});
 });
-
 app.patch('/admin/transactions/:id',appAuth,adminOnly,async(req,res)=>{
   const rows=readJson("transactions.json",[]);
   const row=rows.find(x=>String(x.id)===String(req.params.id));
