@@ -290,11 +290,8 @@ const defaultPricing=[
   {id:"pro",name:"Pro",price:399,credits:1}
 ];
 
-app.get('/api/me',(req,res)=>{
-  const transactions=readJson("transactions.json",[]);
-  const credits=transactions
-    .filter(x=>String(x.userId)===String(userKey(req))&&x.status==="completed")
-    .reduce((sum,x)=>sum+Number(x.credits||0),0);
+app.get('/api/me',async(req,res)=>{
+  const credits=await calculateCreditBalance(userKey(req));
   res.json({user:req.user,credits});
 });
 
@@ -486,7 +483,7 @@ async function savePersistentTransaction(row){
   const rows=await supabaseRequest('POST','transactions',[{id:row.id,user_id:row.userId,plan_id:row.planId||'',plan_name:row.planName||'',amount:Number(row.amount||0),credits:Number(row.credits||0),status:row.status||'pending',type:row.type||'payment',order_id:row.orderId||null,created_at:row.createdAt||new Date().toISOString()}]);
   return Array.isArray(rows)&&rows.length>0;
 }
-async function await calculateCreditBalance(userId){
+async function calculateCreditBalance(userId){
   try{
     const rows=await getPersistentTransactions(userId);
     if(Array.isArray(rows)) return rows.filter(x=>x.status==="completed").reduce((sum,x)=>sum+Number(x.credits||0),0);
