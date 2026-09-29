@@ -64,7 +64,11 @@ async function supabaseRequest(method, table, body){
   });
   const text=await r.text();
   let data=[]; try{data=text?JSON.parse(text):[];}catch{data=[];}
-  if(!r.ok) throw new Error('Supabase request failed: '+r.status);
+  if(!r.ok){
+    let detail='';
+    try{ const errData=text?JSON.parse(text):null; detail=String(errData?.message||errData?.error_description||errData?.hint||errData?.code||'').slice(0,300); }catch{}
+    throw new Error('Supabase request failed: '+r.status+(detail?' - '+detail:''));
+  }
   return data;
 }
 async function getPersistentPricing(){
