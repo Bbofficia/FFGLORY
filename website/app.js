@@ -8,7 +8,7 @@ async function api(path, options = {}) {
   const res = await fetch(API + path,{...options,headers});
   const data = await res.json().catch(()=>({}));
 
-  if(!res.ok) throw new Error(data.message || data.error || "Request failed");
+  if(!res.ok) throw new Error(data.message || data.error ? ((data.message || data.error) + (data.detail ? " — " + data.detail : "")) : "Request failed");
   return data;
 }
 
