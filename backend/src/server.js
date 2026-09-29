@@ -46,6 +46,37 @@ const base=(process.env.FFGLORY_BASE||'https://ffglory.pro').replace(/\/$/,'');
 const accountKey=process.env.FFGLORY_API_KEY; const masterKey=process.env.FFGLORY_MASTER_KEY;
 const appToken=process.env.APP_ACCESS_TOKEN;
 const dataDir=process.env.DATA_DIR || path.resolve(process.cwd(),'data');
+
+const supabaseUrl=String(process.env.SUPABASE_URL||'').replace(/\/$/,'');
+const supabaseServiceKey=String(process.env.SUPABASE_SERVICE_ROLE_KEY||'');
+async function supabaseRequest(method, table, body){
+  if(!supabaseUrl || !supabaseServiceKey) return null;
+  const r=await fetch(supabaseUrl+'/rest/v1/'+table,{
+    method,
+    headers:{
+      apikey:supabaseServiceKey,
+      Authorization:'Bearer '+supabaseServiceKey,
+      'Content-Type':'application/json',
+      Prefer: method==='GET' ? 'return=representation' : 'return=representation'
+    },
+    body:body===undefined?undefined:JSON.stringify(body),
+    signal:AbortSignal.timeout(10000)
+  });
+  const text=await r.text();
+  let data=[]; try{data=text?JSON.parse(text):[];}catch{data=[];}
+  if(!r.ok) throw new Error('Supabase request failed: '+r.status);
+  return data;
+}
+async function getPersistentPricing(){
+  if(!supabaseUrl || !supabaseServiceKey) return null;
+  const rows=await supabaseRequest('GET','pricing?select=id,name,price,credits&order=id.asc');
+  return Array.isArray(rows)?rows:null;
+}
+async function savePersistentPricing(plans){
+  if(!supabaseUrl || !supabaseServiceKey) return false;
+  await supabaseRequest('POST','pricing?on_conflict=id',plans);
+  return true;
+}
 const usersFile=path.join(dataDir,'users.json');
 const auditFile=path.join(dataDir,'audit.json');
 const sessionsFile=path.join(dataDir,'sessions.json');
@@ -118,9 +149,9 @@ function writeJson(name,value){atomicWrite(localFile(name),value);}
 function userKey(req){return req.user?.id||req.user?.email||"unknown";}
 
 const defaultPricing=[
-  {id:"basic",name:"Basic",price:99,credits:100},
-  {id:"premium",name:"Premium",price:199,credits:250},
-  {id:"pro",name:"Pro",price:399,credits:600}
+  {id:"basic",name:"Basic",price:99,credits:1},
+  {id:"premium",name:"Premium",price:199,credits:1},
+  {id:"pro",name:"Pro",price:399,credits:1}
 ];
 
 app.get('/api/me',(req,res)=>{
@@ -131,8 +162,13 @@ app.get('/api/me',(req,res)=>{
   res.json({user:req.user,credits});
 });
 
-app.get('/api/pricing',(req,res)=>{
-  res.json({plans:readJson("pricing.json",defaultPricing)});
+app.get('/api/pricing',async(req,res)=>{
+  try{
+    const plans=await getPersistentPricing();
+    res.json({plans:plans&&plans.length?plans:readJson("pricing.json",defaultPricing)});
+  }catch(e){
+    res.status(500).json({error:'Unable to load pricing'});
+  }
 });
 
 app.get('/api/credit-history',(req,res)=>{
@@ -210,10 +246,11 @@ app.post('/api/coupons/cancel',(req,res)=>{
   res.json({ok:true,coupon:row});
 });
 
-app.post('/api/transactions',(req,res)=>{
+app.post('/api/transactions',async(req,res)=>{
   const rows=readJson("transactions.json",[]);
   const plan=String(req.body?.plan_id||"");
-  const plans=readJson("pricing.json",defaultPricing);
+  const persistentPlans=await getPersistentPricing();
+  const plans=persistentPlans&&persistentPlans.length?persistentPlans:readJson("pricing.json",defaultPricing);
   const selected=plans.find(x=>String(x.id)===plan);
   if(!selected)return res.status(404).json({error:"Plan not found"});
 
@@ -376,8 +413,13 @@ app.patch('/admin/transactions/:id',appAuth,adminOnly,(req,res)=>{
   writeJson("transactions.json",rows); audit(req,"admin.transaction.update",row.id);
   res.json({ok:true,transaction:row});
 });
-app.get('/admin/pricing',appAuth,adminOnly,(req,res)=>res.json({plans:readJson("pricing.json",defaultPricing)}));
-app.put('/admin/pricing',appAuth,adminOnly,(req,res)=>{
+app.get('/admin/pricing',appAuth,adminOnly,async(req,res)=>{
+  try{
+    const plans=await getPersistentPricing();
+    res.json({plans:plans&&plans.length?plans:readJson("pricing.json",defaultPricing)});
+  }catch(e){res.status(500).json({error:'Unable to load pricing'});}
+});
+app.put('/admin/pricing',appAuth,adminOnly,async(req,res)=>{
   if(!Array.isArray(req.body?.plans)) return res.status(400).json({error:"plans must be an array"});
   const plans=req.body.plans.map(x=>({
     id:String(x.id||"").trim(),
@@ -386,8 +428,17 @@ app.put('/admin/pricing',appAuth,adminOnly,(req,res)=>{
     credits:Number(x.credits||0)
   })).filter(x=>x.id&&x.name&&Number.isFinite(x.price)&&x.price>=0&&Number.isFinite(x.credits)&&x.credits>=0);
   if(!plans.length)return res.status(400).json({error:"At least one valid plan is required"});
-  writeJson("pricing.json",plans); audit(req,"admin.pricing.update","pricing");
-  res.json({ok:true,plans});
+  try{
+    if(supabaseUrl && supabaseServiceKey){
+      await supabaseRequest('POST','pricing?on_conflict=id',plans);
+    }else{
+      writeJson("pricing.json",plans);
+    }
+    audit(req,"admin.pricing.update","pricing");
+    res.json({ok:true,plans});
+  }catch(e){
+    res.status(500).json({error:'Unable to save pricing'});
+  }
 });
 
 app.post('/auth/change-password',appAuth,(req,res)=>{ const u=readUsers()[req.user.email]; const old=String(req.body?.old_password||''); const next=String(req.body?.new_password||''); if(!u||!verifyPassword(old,u.passwordHash)) return res.status(401).json({error:'Current password is incorrect'}); if(next.length<8) return res.status(400).json({error:'New password must be at least 8 characters'}); u.passwordHash=hashPassword(next); const users=readUsers(); users[req.user.email]=u; writeUsers(users); for(const [k,s] of sessions){ if(s?.user?.id===u.id) sessions.delete(k); } writeSessions(Object.fromEntries(sessions)); audit(req,'password.change',req.user.email); res.json({ok:true}); });
