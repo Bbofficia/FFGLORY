@@ -66,6 +66,7 @@ style.textContent = `
 `;
 
 document.head.appendChild(style);
+.mf-payment-box{max-width:540px!important}.mf-pay-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.mf-pay-head small{color:#22d3ee;letter-spacing:2px;font-size:10px;font-weight:900}.mf-pay-head h2{margin:4px 0 0}.mf-pay-product{display:flex;justify-content:space-between;align-items:center;padding:14px;margin:16px 0;border-radius:15px;background:#100b1d;border:1px solid rgba(168,85,247,.28)}.mf-pay-product strong{font-size:25px;color:#ffd166}.mf-pay-qr-wrap{display:flex;flex-direction:column;align-items:center;gap:7px;color:#aaa;font-size:11px}.mf-pay-qr{width:230px;height:230px;object-fit:contain;background:#fff;padding:10px;border-radius:18px;box-shadow:0 0 35px rgba(34,211,238,.15)}.mf-upi-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px;margin-top:14px;border-radius:14px;background:#090711;border:1px solid rgba(34,211,238,.25)}.mf-upi-row small{display:block;color:#888;font-size:9px}.mf-upi-row b{display:block;color:#22d3ee;margin-top:3px;word-break:break-all}.mf-copy-upi{padding:8px 11px;border:0;border-radius:9px;background:#22d3ee;color:#061016;font-weight:900;cursor:pointer}.mf-pay-now,.mf-paid-btn{display:block;width:100%;box-sizing:border-box;text-align:center;padding:13px;margin-top:12px;border:0;border-radius:12px;font-weight:900;cursor:pointer;text-decoration:none}.mf-pay-now{background:linear-gradient(90deg,#22d3ee,#a855f7);color:#fff}.mf-paid-btn{background:linear-gradient(90deg,#ffd166,#a855f7);color:#090611}.mf-order-id{display:flex;justify-content:space-between;gap:10px;margin-top:13px;padding:10px;border-radius:11px;background:#0b0811;color:#aaa;font-size:10px}.mf-order-id b{color:#fff;word-break:break-all}.mf-pay-note{color:#85808f!important;font-size:10px!important;line-height:1.5;margin-top:12px!important}
 
 function showLoginSuccess(){
   const toast=document.createElement("div");
@@ -335,7 +336,30 @@ async function openProductStore(){
   try{const d=await api("/api/products");const rows=d.products||[];document.getElementById("mf-product-list").innerHTML=rows.length?rows.map(p=>'<div class="mf-product-card">'+(p.imageUrl?'<img src="'+p.imageUrl+'" alt="">':'')+'<h3>'+p.name+'</h3><p>'+(p.description||'Premium panel product.')+'</p><strong>₹'+p.price+'</strong><button class="mf-glow-btn" onclick="orderPanelProduct(\''+p.id+'\')">🛒 Buy / Order</button></div>').join(""):"<p>No products available yet.</p>";}catch(e){document.getElementById("mf-product-list").textContent="❌ "+e.message;}
 }
 async function orderPanelProduct(id){
-  try{const d=await api("/api/products/"+encodeURIComponent(id)+"/order",{method:"POST"});let box=document.getElementById("mf-product-pay");if(box)box.remove();box=document.createElement("div");box.id="mf-product-pay";box.className="mf-product-modal";const upi=d.upiId||"";const link=upi?"upi://pay?pa="+encodeURIComponent(upi)+"&pn="+encodeURIComponent("FFMAFIA.PANEL")+"&am="+encodeURIComponent(d.order.amount)+"&cu=INR&tn="+encodeURIComponent(d.order.id):"";box.innerHTML='<div class="mf-product-box" style="max-width:520px;text-align:center"><h2>💳 Complete Payment</h2><p>'+(d.product.name)+'</p><div style="font-size:34px;color:#ffd166;font-weight:950">₹'+d.order.amount+'</div>'+(d.qrUrl?'<img src="'+d.qrUrl+'" style="width:230px;background:#fff;padding:10px;border-radius:18px" alt="QR">':'')+(upi?'<div style="color:#22d3ee;font-weight:900;margin:10px">'+upi+'</div><a class="mf-glow-btn" href="'+link+'">📲 Pay with UPI</a>':'')+'<p style="font-size:12px;color:#aaa">Order ID: '+d.order.id+'</p><button class="mf-glow-btn" onclick="confirmProductPayment(\''+d.order.id+'\')">✓ I Have Paid</button><button class="mf-admin-btn" onclick="this.closest(\'#mf-product-pay\').remove()">Close</button></div>';document.body.appendChild(box);}catch(e){alert("❌ "+e.message);}
+  try{
+    const d=await api("/api/products/"+encodeURIComponent(id)+"/order",{method:"POST"});
+    let box=document.getElementById("mf-product-pay"); if(box)box.remove();
+    box=document.createElement("div"); box.id="mf-product-pay"; box.className="mf-product-modal";
+    const upi=d.upiId||"";
+    const amount=Number(d.order?.amount||d.product?.price||0);
+    const orderId=d.order?.id||"";
+    const link=upi?"upi://pay?pa="+encodeURIComponent(upi)+"&pn="+encodeURIComponent("FFMAFIA.PANEL")+"&am="+encodeURIComponent(amount)+"&cu=INR&tn="+encodeURIComponent(orderId):"";
+    box.innerHTML='<div class="mf-product-box mf-payment-box">'+
+      '<div class="mf-pay-head"><div><small>SECURE CHECKOUT</small><h2>💳 Pay for your order</h2></div><button class="mf-admin-btn" onclick="this.closest(\'#mf-product-pay\').remove()">✕</button></div>'+
+      '<div class="mf-pay-product"><b>'+String(d.product.name||"Panel Product")+'</b><strong>₹'+amount+'</strong></div>'+
+      (d.qrUrl?'<div class="mf-pay-qr-wrap"><img class="mf-pay-qr" src="'+d.qrUrl+'" alt="Payment QR"><span>Scan with any UPI app</span></div>':'')+
+      (upi?'<div class="mf-upi-row"><div><small>UPI ID</small><b id="mf-pay-upi">'+upi+'</b></div><button class="mf-copy-upi" onclick="copyPanelUpi()">COPY</button></div><a class="mf-pay-now" href="'+link+'">📲 Pay Now with UPI App</a>':'')+
+      '<div class="mf-order-id"><span>Order ID</span><b>'+orderId+'</b></div>'+
+      '<button class="mf-paid-btn" onclick="confirmProductPayment(\''+orderId+'\')">✓ I Have Paid</button>'+
+      '<p class="mf-pay-note">Payment complete করার পরে “I Have Paid” চাপুন। Admin verify করার পর order process/delivery হবে.</p>'+
+      '</div>';
+    document.body.appendChild(box);
+  }catch(e){alert("❌ "+e.message);}
+}
+function copyPanelUpi(){
+  const el=document.getElementById("mf-pay-upi");
+  if(!el)return;
+  navigator.clipboard?.writeText(el.textContent).then(()=>alert("✅ UPI ID copied")).catch(()=>alert("UPI ID: "+el.textContent));
 }
 async function confirmProductPayment(orderId){
   try{
@@ -389,12 +413,6 @@ async function loadAdminTab(tab){
       const d=await api("/admin/pricing");
       box.innerHTML=`<div style="display:grid;gap:12px">${d.plans.map((p,i)=>`<div class="mf-admin-stat"><input id="apn${i}" value="${p.name}"> <input id="app${i}" type="number" value="${p.price}"> <input id="apc${i}" type="number" value="${p.credits}"> <input id="api${i}" value="${p.id}" disabled></div>`).join("")}<button class="mf-admin-btn" onclick="saveAdminPricing()">💾 Save Pricing</button></div>`;
       panelPricingCache=d.plans;
-    }else if(tab==="coupons"){
-      const d=await api("/admin/coupons"); box.innerHTML=`<div style="overflow:auto"><table class="mf-admin-table"><tr><th>Code</th><th>User</th><th>Status</th></tr>${d.coupons.map(c=>`<tr><td>${c.code}</td><td>${c.userId}</td><td>${c.status}</td></tr>`).join("")}</table></div>`;
-    }else if(tab==="transactions"){
-      const d=await api("/admin/transactions");
-      const rows=(d.transactions||[]).filter(t=>t.type==="product_purchase" || String(t.planId||"").startsWith("product:"));
-      box.innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px"><b>📦 Panel Orders & Payments</b><button class="mf-admin-btn" onclick="loadAdminTab('transactions')">🔄 Refresh</button></div><div style="overflow:auto"><table class="mf-admin-table"><tr><th>Product</th><th>Amount</th><th>Order</th><th>User</th><th>Status</th><th>Action</th></tr>${rows.map(t=>`<tr><td><b>${t.planName||"-"}</b></td><td>₹${Number(t.amount||0)}</td><td><small>${String(t.orderId||t.id).slice(0,12)}...</small></td><td><small>${t.userId||"-"}</small></td><td><b>${t.status}</b></td><td>${(t.status==="payment_pending"||t.status==="payment_submitted")?`<button class="mf-admin-btn" onclick="adminVerifyPayment('${t.id}')">✅ Verify</button> <button class="mf-admin-btn" onclick="adminRejectPayment('${t.id}')">❌ Reject</button>`:(t.status==="completed"?"✅ Completed":(t.status==="refunded"?"↩️ Refunded":"—"))}</td></tr>`).join("")}</table></div>`;
     }else if(tab==="audit"){
       const d=await api("/admin/audit?limit=200"); box.innerHTML=`<pre style="white-space:pre-wrap;background:#100b1d;padding:14px;border-radius:14px;max-height:65vh;overflow:auto">${JSON.stringify(d.events||[],null,2)}</pre>`;
     }
