@@ -92,9 +92,9 @@ modal.innerHTML = `
 
 <button class="mf-submit" id="mf-submit">Sign In</button>
 <div style="text-align:center;margin-top:14px;color:#aaa;font-size:13px">Need help? <span style="color:#22d3ee">Contact Admin</span></div>
-<div style="display:flex;justify-content:center;gap:18px;margin-top:12px">
-  <a href="#" onclick="return false" style="color:#25D366;text-decoration:none">WhatsApp</a>
-  <a href="https://t.me/mafiaffglory" target="_blank" style="color:#22a7f2;text-decoration:none">Telegram</a>
+<div style="display:flex;justify-content:center;gap:18px;margin-top:12px;flex-wrap:wrap">
+  <a href="https://t.me/TeamPro78" target="_blank" style="color:#22d3ee;text-decoration:none">💬 @TeamPro78 Support</a>
+  <a href="https://t.me/mafiaffglory" target="_blank" style="color:#a855f7;text-decoration:none">📢 Telegram Group</a>
 </div>
 
 <div class="mf-switch">
@@ -249,8 +249,8 @@ async function showDashboard(){
           <div class="mf-dash-card mf-card-pricing"><div class="mf-dash-icon">💳</div><h3>Payment</h3><p>Buy credits and complete payments.</p><button class="mf-glow-btn" onclick="openPricingManager()">💎 Payment Options</button></div>
           <div class="mf-dash-card mf-card-coupons"><div class="mf-dash-icon">🎟️</div><h3>Coupons</h3><p>Redeem your coupon codes.</p><button class="mf-glow-btn" onclick="openCouponManager()">🎁 Redeem Coupon</button></div>
           <div class="mf-dash-card mf-card-transactions"><div class="mf-dash-icon">📦</div><h3>My Orders</h3><p>Track payments and purchase history.</p><button class="mf-glow-btn" onclick="openDashboardApi('My Orders','/api/transactions')">📋 View Orders</button></div>
-          <div class="mf-dash-card"><div class="mf-dash-icon">💬</div><h3>Support</h3><p>Contact FFMAFIA.PANEL support.</p><button class="mf-glow-btn" onclick="window.open('https://t.me/TeamPro78','_blank')">💬 Support</button></div>
-          <div class="mf-dash-card"><div class="mf-dash-icon">📢</div><h3>Telegram</h3><p>Join our official channel for updates.</p><button class="mf-glow-btn" onclick="window.open('https://t.me/mafiaffglory','_blank')">📢 Join Channel</button></div>
+          <div class="mf-dash-card"><div class="mf-dash-icon">💬</div><h3>Support</h3><p>Direct Telegram support: @TeamPro78</p><button class="mf-glow-btn" onclick="window.open('https://t.me/TeamPro78','_blank')">💬 @TeamPro78</button></div>
+          <div class="mf-dash-card"><div class="mf-dash-icon">📢</div><h3>Telegram Group</h3><p>Join the official FFMAFIA.PANEL Telegram group.</p><button class="mf-glow-btn" onclick="window.open('https://t.me/mafiaffglory','_blank')">📢 Join Group</button></div>
         </div>
 
         <div id="mf-admin-card" class="mf-admin-card mf-dash-admin" style="display:none">
