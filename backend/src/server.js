@@ -495,6 +495,11 @@ async function savePersistentTransaction(row){
   const rows=await supabaseRequest('POST','transactions',[{id:row.id,user_id:row.userId,plan_id:row.planId||'',plan_name:row.planName||'',amount:Number(row.amount||0),credits:Number(row.credits||0),status:row.status||'pending',type:row.type||'payment',order_id:row.orderId||null,created_at:row.createdAt||new Date().toISOString()}]);
   return Array.isArray(rows)&&rows.length>0;
 }
+async function getAllPersistentTransactions(){
+  if(!supabaseUrl||!supabaseServiceKey) return null;
+  const rows=await supabaseRequest('GET','transactions?select=id,user_id,plan_id,plan_name,amount,credits,status,type,order_id,created_at&order=created_at.desc');
+  return Array.isArray(rows)?rows.map(x=>({id:x.id,userId:x.user_id,planId:x.plan_id||'',planName:x.plan_name||'',amount:Number(x.amount||0),credits:Number(x.credits||0),status:x.status||'pending',type:x.type||'payment',orderId:x.order_id||undefined,createdAt:x.created_at})):null;
+}
 async function getPersistentTransactionById(id){
   if(!supabaseUrl||!supabaseServiceKey) return null;
   const rows=await supabaseRequest('GET','transactions?id=eq.'+encodeURIComponent(id)+'&select=id,user_id,plan_id,plan_name,amount,credits,status,type,order_id,created_at');
@@ -677,8 +682,8 @@ app.patch('/admin/coupons/:id',appAuth,adminOnly,(req,res)=>{
 });
 app.get('/admin/transactions',appAuth,adminOnly,async(req,res)=>{
   try{
-    const rows=await getPersistentTransactions(req.query.userId||"");
-    if(Array.isArray(rows)&&rows.length) return res.json({transactions:rows});
+    const rows=await getAllPersistentTransactions();
+    if(Array.isArray(rows)) return res.json({transactions:rows});
   }catch(e){}
   res.json({transactions:readJson("transactions.json",[])});
 });
