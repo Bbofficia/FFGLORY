@@ -440,11 +440,13 @@ app.post('/api/glory-orders',(req,res)=>{
   const guildId=String(req.body?.guild_id||"").trim();
   const region=String(req.body?.region||"").trim();
   const targetGlory=Math.max(1,Math.floor(Number(req.body?.target_glory||0)));
-  const creditCost=Math.max(1,Math.floor(Number(req.body?.credit_cost||0)));
+  const botCount=Math.floor(Number(req.body?.bot_count||4));
+  const creditCost=botCount===8?2:botCount===4?1:0;
   if(guildId.length<3) return res.status(400).json({error:"Valid Guild ID is required"});
   if(!region) return res.status(400).json({error:"Region is required"});
   if(!Number.isFinite(targetGlory)||targetGlory<1) return res.status(400).json({error:"Target glory must be greater than 0"});
-  if(!Number.isFinite(creditCost)||creditCost<1) return res.status(400).json({error:"Credit cost must be at least 1"});
+  if(![4,8].includes(botCount)) return res.status(400).json({error:"Bot count must be 4 or 8"});
+  if(!Number.isFinite(creditCost)||creditCost<1) return res.status(400).json({error:"Invalid bot credit cost"});
   const active=rows.find(x=>String(x.userId)===String(userId)&&x.guildId===guildId&&!["completed","cancelled","failed"].includes(x.status));
   if(active) return res.status(409).json({error:"An active order already exists for this Guild ID"});
   const balance=calculateCreditBalance(userId);
@@ -452,9 +454,9 @@ app.post('/api/glory-orders',(req,res)=>{
   const id=crypto.randomUUID();
   const now=new Date().toISOString();
   const order={
-    id,userId,guildId,region,targetGlory,creditCost,currentGlory:0,progress:0,status:"queued",
+    id,userId,guildId,region,targetGlory,botCount,creditCost,currentGlory:0,progress:0,status:"queued",
     createdAt:now,updatedAt:now,
-    workers:[1,2,3,4].map(n=>({slot:n,status:"waiting",progress:0}))
+    workers:Array.from({length:botCount},(_,i)=>({slot:i+1,status:"waiting",progress:0}))
   };
   rows.push(order);
   transactions.push({id:crypto.randomUUID(),userId,planId:"glory-debit",planName:"Glory Order "+id.slice(0,8),amount:0,credits:-creditCost,status:"completed",type:"glory_debit",orderId:id,createdAt:now});
