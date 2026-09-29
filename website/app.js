@@ -159,6 +159,7 @@ document.getElementById("mf-submit").onclick=async()=>{
       openAuth(false);
     }else{
       localStorage.setItem("ffglory_token",data.token);
+      sessionStorage.setItem("mf_login_success","1");
 
       modal.style.display="none";
       location.reload();
