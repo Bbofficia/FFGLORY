@@ -419,6 +419,7 @@ app.post('/api/transactions',async(req,res)=>{
 
   rows.push(row);
   writeJson("transactions.json",rows);
+  try{ await savePersistentTransaction(row); }catch(e){}
   audit(req,"transaction.create",row.id);
   res.status(201).json({transaction:row,upiId:String(process.env.PAYMENT_UPI_ID||"")});
 });
@@ -438,6 +439,7 @@ app.post('/api/transactions/refund-request',(req,res)=>{
   row.status="refund_requested";
   row.refundRequestedAt=new Date().toISOString();
   writeJson("transactions.json",rows);
+  try{ await savePersistentTransaction(row); }catch(e){}
   audit(req,"transaction.refund_request",row.id);
   res.json({ok:true,transaction:row});
 });
@@ -448,6 +450,7 @@ app.post('/api/transactions/cancel',(req,res)=>{
   const row=rows.find(x=>String(x.id)===id&&String(x.userId)===String(userKey(req)));
   if(!row)return res.status(404).json({error:"Transaction not found"});
   row.status="cancelled";writeJson("transactions.json",rows);
+  try{ await savePersistentTransaction(row); }catch(e){}
   res.json({ok:true,transaction:row});
 });
 
@@ -483,7 +486,7 @@ async function savePersistentTransaction(row){
   const rows=await supabaseRequest('POST','transactions',[{id:row.id,user_id:row.userId,plan_id:row.planId||'',plan_name:row.planName||'',amount:Number(row.amount||0),credits:Number(row.credits||0),status:row.status||'pending',type:row.type||'payment',order_id:row.orderId||null,created_at:row.createdAt||new Date().toISOString()}]);
   return Array.isArray(rows)&&rows.length>0;
 }
-async function calculateCreditBalance(userId){
+async function await calculateCreditBalance(userId){
   try{
     const rows=await getPersistentTransactions(userId);
     if(Array.isArray(rows)) return rows.filter(x=>x.status==="completed").reduce((sum,x)=>sum+Number(x.credits||0),0);
@@ -512,7 +515,7 @@ app.post('/api/glory-orders',async(req,res)=>{
   if(guildId.length<3) return res.status(400).json({error:"Valid Guild ID is required"});
   if(!region) return res.status(400).json({error:"Region is required"});
   if(![4,8].includes(botCount)) return res.status(400).json({error:"Bot count must be 4 or 8"});
-  const balance=calculateCreditBalance(userId);
+  const balance=await calculateCreditBalance(userId);
   if(balance<creditCost) return res.status(400).json({error:"Insufficient credits"});
   let existing=[];
   try{ existing=(await getPersistentGloryOrders(userId))||[]; }catch(e){}
@@ -654,6 +657,7 @@ app.patch('/admin/transactions/:id/verify',appAuth,adminOnly,(req,res)=>{
   row.verifiedAt=new Date().toISOString();
   row.verifiedBy=req.user.id;
   writeJson("transactions.json",rows);
+  try{ await savePersistentTransaction(row); }catch(e){}
   audit(req,"admin.transaction.verify",row.id);
   res.json({ok:true,transaction:row});
 });
@@ -666,6 +670,7 @@ app.patch('/admin/transactions/:id/reject',appAuth,adminOnly,(req,res)=>{
   row.rejectedAt=new Date().toISOString();
   row.rejectedBy=req.user.id;
   writeJson("transactions.json",rows);
+  try{ await savePersistentTransaction(row); }catch(e){}
   audit(req,"admin.transaction.reject",row.id);
   res.json({ok:true,transaction:row});
 });
@@ -689,7 +694,9 @@ app.patch('/admin/transactions/:id',appAuth,adminOnly,(req,res)=>{
   const row=rows.find(x=>String(x.id)===String(req.params.id));
   if(!row)return res.status(404).json({error:"Transaction not found"});
   if(typeof req.body?.status==="string") row.status=req.body.status.trim().slice(0,30);
-  writeJson("transactions.json",rows); audit(req,"admin.transaction.update",row.id);
+  writeJson("transactions.json",rows);
+  try{ await savePersistentTransaction(row); }catch(e){}
+  audit(req,"admin.transaction.update",row.id);
   res.json({ok:true,transaction:row});
 });
 app.get('/admin/pricing',appAuth,adminOnly,async(req,res)=>{
