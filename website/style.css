@@ -74,3 +74,53 @@ footer{text-align:center;color:#aaa4b8;padding:35px 20px}
 
 @media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:520px){body::before{opacity:.32;filter:brightness(1) saturate(1.12);background-position:center top}body::after{background:linear-gradient(180deg,rgba(5,3,11,0),rgba(5,3,11,.08))}.topbar{background:rgba(5,3,11,.48);text-align:center}.brand{font-size:21px}.hero{min-height:65vh}.hero p{color:#eee}.grid{grid-template-columns:1fr}.section{padding:50px 16px}.bottom-nav a{font-size:11px}.bottom-nav{bottom:10px}.stat-large{width:96px}.stat-medium{width:84px}.stat-small{width:74px}#mf-dashboard{padding:22px 12px 105px!important}#mf-dashboard .grid{grid-template-columns:1fr;gap:14px}#mf-dashboard .grid>.card{min-height:175px}#mf-dashboard .grid>.card h3{font-size:23px}#mf-dashboard .grid>.card p{font-size:16px}#mf-dashboard button,#mf-dashboard .btn,#mf-dashboard .mf-admin-btn{min-height:50px;font-size:16px}}
+
+/* Premium dashboard layout inspired by the MafiaFF Glory pricing screen */
+.mf-dash-wrap{max-width:920px;margin:0 auto;padding:6px 0 12px}
+.mf-dash-hero{text-align:center;padding:28px 12px 24px}
+.mf-dash-kicker{font-size:13px;font-weight:900;letter-spacing:4px;color:#c7a5ff;margin-bottom:12px}
+.mf-dash-hero h2{font-size:clamp(34px,8vw,58px);line-height:1.03;font-weight:950;letter-spacing:-1px;margin:0;text-shadow:0 8px 30px rgba(0,0,0,.5)}
+.mf-dash-hero h2 span{background:linear-gradient(90deg,#fff,#b875ff,#25d8f3);-webkit-background-clip:text;color:transparent}
+.mf-dash-hero p{margin:16px 0 0!important;color:#fff!important;font-size:17px!important;font-weight:800!important}
+.mf-wallet-card{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:24px;border-radius:26px;background:linear-gradient(135deg,rgba(20,12,36,.94),rgba(9,24,34,.94));border:1px solid rgba(168,85,247,.55);box-shadow:0 18px 55px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.08);margin-bottom:28px}
+.mf-wallet-label{font-size:12px;letter-spacing:1.5px;font-weight:900;color:#d9d1e6}
+.mf-wallet-balance{font-size:42px;line-height:1;font-weight:950;color:#ffd166;margin-top:8px;text-shadow:0 0 24px rgba(255,209,102,.25)}
+.mf-wallet-summary{font-size:13px;color:#eeeaf3;margin-top:7px}
+.mf-glow-btn{min-height:48px;padding:12px 18px;border-radius:15px;border:1px solid rgba(255,255,255,.28);background:linear-gradient(90deg,#a855f7,#22d3ee);color:#fff!important;font-size:14px;font-weight:950;box-shadow:0 8px 28px rgba(34,211,238,.16);cursor:pointer}
+.mf-glow-btn:active{transform:scale(.98)}
+.mf-dash-section-title{display:flex;align-items:end;justify-content:space-between;gap:10px;margin:0 4px 14px}
+.mf-dash-section-title span{font-size:22px;font-weight:950}
+.mf-dash-section-title small{color:#c9c3d2;font-size:12px}
+.mf-dash-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.mf-dash-card{position:relative;overflow:hidden;min-height:215px;padding:23px;border-radius:24px;background:linear-gradient(145deg,rgba(18,12,30,.94),rgba(10,20,30,.94));border:1px solid rgba(255,255,255,.18);box-shadow:0 16px 45px rgba(0,0,0,.32)}
+.mf-dash-card::after{content:"";position:absolute;right:-45px;top:-55px;width:140px;height:140px;border-radius:50%;background:rgba(168,85,247,.16);filter:blur(8px);pointer-events:none}
+.mf-card-pricing::after{background:rgba(255,209,102,.16)}
+.mf-card-coupons::after{background:rgba(34,211,238,.15)}
+.mf-card-transactions::after{background:rgba(168,85,247,.18)}
+.mf-dash-icon{width:50px;height:50px;display:flex;align-items:center;justify-content:center;border-radius:16px;background:linear-gradient(135deg,rgba(168,85,247,.28),rgba(34,211,238,.16));border:1px solid rgba(255,255,255,.16);font-size:25px;margin-bottom:17px}
+.mf-dash-card h3,.mf-dash-admin h3{font-size:24px!important;margin:0 0 8px!important;color:#fff!important}
+.mf-dash-card p,.mf-dash-admin p{font-size:14px!important;color:#ddd8e5!important;line-height:1.55!important;min-height:44px;margin:0 0 16px!important}
+.mf-inline-panel{margin-top:16px;padding:17px;background:rgba(5,3,11,.82);border:1px solid rgba(168,85,247,.55);border-radius:18px}
+.mf-inline-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.mf-inline-head h3{margin:0!important}
+.mf-close-circle{width:38px;height:38px;border:0;border-radius:50%;background:#ff4d6d;color:#fff;font-size:18px;font-weight:900;cursor:pointer}
+.mf-inline-panel input,.mf-inline-panel select{width:100%;padding:13px;margin:6px 0;border-radius:12px;background:#080611;color:#fff;border:1px solid rgba(168,85,247,.5)}
+.mf-dash-admin{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;padding:20px 22px;border-radius:22px;background:linear-gradient(135deg,rgba(255,209,102,.10),rgba(168,85,247,.12));border:1px solid rgba(255,209,102,.35)}
+.mf-dash-admin .mf-dash-icon{margin:0 0 10px}
+.mf-logout-btn{display:block;margin:24px auto 4px;min-width:150px;padding:11px 20px;border-radius:14px;background:rgba(255,77,109,.10);border:1px solid rgba(255,77,109,.45);color:#ffb4c1;font-weight:900;cursor:pointer}
+@media(max-width:600px){
+  #mf-dashboard{padding:12px 12px 108px!important}
+  .mf-dash-wrap{padding-top:0}
+  .mf-dash-hero{padding:22px 8px 20px}
+  .mf-dash-hero h2{font-size:38px}
+  .mf-dash-kicker{font-size:11px;letter-spacing:3px}
+  .mf-wallet-card{padding:20px;align-items:flex-start;flex-direction:column}
+  .mf-wallet-balance{font-size:38px}
+  .mf-wallet-card .mf-glow-btn{width:100%}
+  .mf-dash-grid{grid-template-columns:1fr;gap:14px}
+  .mf-dash-card{min-height:195px;padding:21px}
+  .mf-dash-card h3{font-size:23px!important}
+  .mf-dash-section-title{margin-top:4px}
+  .mf-dash-admin{align-items:flex-start;flex-direction:column}
+  .mf-dash-admin .mf-glow-btn{width:100%}
+}
