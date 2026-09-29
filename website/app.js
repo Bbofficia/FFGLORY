@@ -247,7 +247,6 @@ async function showDashboard(){
         <div class="mf-dash-grid">
           <div class="mf-dash-card"><div class="mf-dash-icon">🛍️</div><h3>Panel Store</h3><p>Browse products and place orders.</p><button class="mf-glow-btn" onclick="openProductStore()">🛒 Browse Products</button></div>
           <div class="mf-dash-card mf-card-pricing"><div class="mf-dash-icon">💳</div><h3>Payment</h3><p>Buy credits and complete payments.</p><button class="mf-glow-btn" onclick="openPricingManager()">💎 Payment Options</button></div>
-          <div class="mf-dash-card mf-card-coupons"><div class="mf-dash-icon">🎟️</div><h3>Coupons</h3><p>Redeem your coupon codes.</p><button class="mf-glow-btn" onclick="openCouponManager()">🎁 Redeem Coupon</button></div>
           <div class="mf-dash-card mf-card-transactions"><div class="mf-dash-icon">📦</div><h3>My Orders</h3><p>Track payments and purchase history.</p><button class="mf-glow-btn" onclick="openDashboardApi('My Orders','/api/transactions')">📋 View Orders</button></div>
           <div class="mf-dash-card"><div class="mf-dash-icon">💬</div><h3>Support</h3><p>Direct Telegram support: @TeamPro78</p><button class="mf-glow-btn" onclick="window.open('https://t.me/TeamPro78','_blank')">💬 @TeamPro78</button></div>
           <div class="mf-dash-card"><div class="mf-dash-icon">📢</div><h3>Telegram Group</h3><p>Join the official FFMAFIA.PANEL Telegram group.</p><button class="mf-glow-btn" onclick="window.open('https://t.me/mafiaffglory','_blank')">📢 Join Group</button></div>
@@ -367,7 +366,7 @@ async function openAdminPanel(){
     <div class="mf-admin-shell">
       <div class="mf-admin-head"><div><h2 style="margin:0">🛡️ FFMAFIA.PANEL Admin</h2><small style="color:#aaa">Private control center</small></div><button class="mf-admin-btn" onclick="document.getElementById('mf-admin-panel').remove()">✕ Close</button></div>
       <div id="mf-admin-tabs" class="mf-admin-tabs">
-        <button onclick="loadAdminTab('overview')">📊 Overview</button><button onclick="loadAdminTab('users')">👥 Users</button><button onclick="loadAdminTab('products')">🛍️ Products</button><button onclick="loadAdminTab('transactions')">📦 Orders & Payments</button><button onclick="loadAdminTab('coupons')">🎟️ Coupons</button><button onclick="loadAdminTab('audit')">📝 Audit</button>
+        <button onclick="loadAdminTab('overview')">📊 Overview</button><button onclick="loadAdminTab('users')">👥 Users</button><button onclick="loadAdminTab('products')">🛍️ Products</button><button onclick="loadAdminTab('transactions')">📦 Orders & Payments</button><button onclick="loadAdminTab('audit')">📝 Audit</button>
       </div>
       <div id="mf-admin-content" style="margin-top:12px">Loading...</div>
     </div>`;
