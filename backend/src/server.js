@@ -122,6 +122,19 @@ async function savePersistentPricing(plans){
   await supabaseRequest('POST','pricing?on_conflict=id',plans);
   return true;
 }
+async function getPersistentGroups(userId){
+  if(!supabaseUrl || !supabaseServiceKey) return null;
+  const rows=await supabaseRequest('GET','groups?user_id=eq.'+encodeURIComponent(userId)+'&select=id,user_id,name,region,clan_id,status,created_at&order=created_at.desc');
+  return Array.isArray(rows)?rows:null;
+}
+async function createPersistentGroup(row){
+  if(!supabaseUrl || !supabaseServiceKey) return null;
+  const rows=await supabaseRequest('POST','groups',[{
+    id:row.id,user_id:row.userId,name:row.name,region:row.region||'',clan_id:row.clan_id||'',status:row.status||'active',
+    created_at:row.createdAt||new Date().toISOString()
+  }]);
+  return Array.isArray(rows)&&rows[0]?rows[0]:null;
+}
 const usersFile=path.join(dataDir,'users.json');
 const auditFile=path.join(dataDir,'audit.json');
 const sessionsFile=path.join(dataDir,'sessions.json');
@@ -280,21 +293,35 @@ app.get('/api/credit-history',(req,res)=>{
   res.json({balance:Math.max(0,balance),purchased,history:transactions.slice().reverse().map(x=>({id:x.id,planName:x.planName,credits:Number(x.credits||0),status:x.status,createdAt:x.createdAt}))});
 });
 
-app.get('/api/groups',(req,res)=>{
-  const rows=readJson("groups.json",[]);
-  res.json({groups:rows.filter(x=>String(x.userId)===String(userKey(req)))});
+app.get('/api/groups',async(req,res)=>{
+  try{
+    const persistent=await getPersistentGroups(userKey(req));
+    if(persistent) return res.json({groups:persistent});
+    const rows=readJson("groups.json",[]);
+    res.json({groups:rows.filter(x=>String(x.userId)===String(userKey(req)))});
+  }catch(e){
+    res.status(500).json({error:"Unable to load Guilds",detail:String(e?.message||e)});
+  }
 });
 
-app.post('/api/groups',(req,res)=>{
-  const rows=readJson("groups.json",[]);
+app.post('/api/groups',async(req,res)=>{
   const row={id:crypto.randomUUID(),userId:userKey(req),
-    name:String(req.body?.name||"My FF Group"),
-    region:String(req.body?.region||""),
-    clan_id:String(req.body?.clan_id||""),
+    name:String(req.body?.name||"My Guild").trim().slice(0,80),
+    region:String(req.body?.region||"").trim().slice(0,40),
+    clan_id:String(req.body?.clan_id||"").trim().slice(0,80),
     status:"active",createdAt:new Date().toISOString()};
-  rows.push(row);writeJson("groups.json",rows);
-  audit(req,"group.create",row.id);
-  res.status(201).json({group:row});
+  if(!row.clan_id)return res.status(400).json({error:"Guild ID is required"});
+  try{
+    if(supabaseUrl && supabaseServiceKey){
+      await createPersistentGroup(row);
+    }else{
+      const rows=readJson("groups.json",[]); rows.push(row); writeJson("groups.json",rows);
+    }
+    audit(req,"group.create",row.id);
+    res.status(201).json({group:row});
+  }catch(e){
+    res.status(500).json({error:"Unable to save Guild",detail:String(e?.message||e)});
+  }
 });
 
 app.post('/api/groups/action',(req,res)=>{
