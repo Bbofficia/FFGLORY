@@ -675,7 +675,13 @@ app.patch('/admin/coupons/:id',appAuth,adminOnly,(req,res)=>{
   writeJson("coupons.json",rows); audit(req,"admin.coupon.update",row.id);
   res.json({ok:true,coupon:row});
 });
-app.get('/admin/transactions',appAuth,adminOnly,(req,res)=>res.json({transactions:readJson("transactions.json",[])}));
+app.get('/admin/transactions',appAuth,adminOnly,async(req,res)=>{
+  try{
+    const rows=await getPersistentTransactions(req.query.userId||"");
+    if(Array.isArray(rows)&&rows.length) return res.json({transactions:rows});
+  }catch(e){}
+  res.json({transactions:readJson("transactions.json",[])});
+});
 app.patch('/admin/transactions/:id/verify',appAuth,adminOnly,async(req,res)=>{
   const rows=readJson("transactions.json",[]);
   let row=rows.find(x=>String(x.id)===String(req.params.id));
