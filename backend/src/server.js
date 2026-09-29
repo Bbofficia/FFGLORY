@@ -215,14 +215,15 @@ app.post('/api/transactions',(req,res)=>{
     planName:selected.name,
     amount:Number(selected.price||0),
     credits:Number(selected.credits||0),
-    status:"completed",
+    status:"payment_pending",
+    paymentMethod:"UPI",
     createdAt:new Date().toISOString()
   };
 
   rows.push(row);
   writeJson("transactions.json",rows);
   audit(req,"transaction.create",row.id);
-  res.status(201).json({transaction:row});
+  res.status(201).json({transaction:row,upiId:String(process.env.PAYMENT_UPI_ID||"")});
 });
 
 app.get('/api/transactions',(req,res)=>{
@@ -319,6 +320,31 @@ app.patch('/admin/coupons/:id',appAuth,adminOnly,(req,res)=>{
   res.json({ok:true,coupon:row});
 });
 app.get('/admin/transactions',appAuth,adminOnly,(req,res)=>res.json({transactions:readJson("transactions.json",[])}));
+app.patch('/admin/transactions/:id/verify',appAuth,adminOnly,(req,res)=>{
+  const rows=readJson("transactions.json",[]);
+  const row=rows.find(x=>String(x.id)===String(req.params.id));
+  if(!row)return res.status(404).json({error:"Transaction not found"});
+  if(row.status!=="payment_pending")return res.status(400).json({error:"Only pending payments can be verified"});
+  row.status="completed";
+  row.verifiedAt=new Date().toISOString();
+  row.verifiedBy=req.user.id;
+  writeJson("transactions.json",rows);
+  audit(req,"admin.transaction.verify",row.id);
+  res.json({ok:true,transaction:row});
+});
+app.patch('/admin/transactions/:id/reject',appAuth,adminOnly,(req,res)=>{
+  const rows=readJson("transactions.json",[]);
+  const row=rows.find(x=>String(x.id)===String(req.params.id));
+  if(!row)return res.status(404).json({error:"Transaction not found"});
+  if(row.status!=="payment_pending")return res.status(400).json({error:"Only pending payments can be rejected"});
+  row.status="payment_rejected";
+  row.rejectedAt=new Date().toISOString();
+  row.rejectedBy=req.user.id;
+  writeJson("transactions.json",rows);
+  audit(req,"admin.transaction.reject",row.id);
+  res.json({ok:true,transaction:row});
+});
+
 app.patch('/admin/transactions/:id/refund',appAuth,adminOnly,(req,res)=>{
   const rows=readJson("transactions.json",[]);
   const row=rows.find(x=>String(x.id)===String(req.params.id));
