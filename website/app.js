@@ -616,7 +616,7 @@ async function buyPricingPlan(planId){
         '<div style="padding:14px;border-radius:16px;background:rgba(255,255,255,.05);text-align:center;margin-bottom:12px"><img src="https://raw.githubusercontent.com/Bbofficia/FFGLORY/main/website/phonepe-qr.svg" alt="PhonePe QR" style="width:min(280px,100%);border-radius:14px;display:block;margin:auto"><b style="display:block;margin-top:10px">SCAN & PAY WITH PHONEPE</b><p style="margin:6px 0;color:#aaa;font-size:12px">Scan the QR code using your PhonePe app.</p></div>'+
         '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
         '<button class="mf-admin-btn" '+(upiLink?'onclick="location.href=\\''+upiLink+'\\'"':'disabled')+'>📲 Pay with UPI</button>'+
-        '<button class="mf-admin-btn" onclick="openDashboardApi(\\'Transactions\\',\\'/api/transactions\\')">✓ I Have Paid</button></div>'+
+        '<button class="mf-admin-btn" onclick="showPaymentStatus(''+t.id+'')">✓ I Have Paid</button></div>'+
         '<p style="color:#aaa;margin:12px 0 0;font-size:12px">'+(upi?'Payment stays pending until Admin verifies it.':'Payment UPI is not configured yet. Admin must configure PAYMENT_UPI_ID.')+'</p></div>';
       msg.style.color="#fff";
     }
@@ -625,6 +625,21 @@ async function buyPricingPlan(planId){
   }
 }
 
+
+async function showPaymentStatus(orderId){
+  try{
+    const data=await api("/api/transactions");
+    const t=(data.transactions||[]).find(x=>String(x.id)===String(orderId));
+    let box=document.getElementById("mf-payment-status"); if(box) box.remove();
+    box=document.createElement("div"); box.id="mf-payment-status";
+    box.style.cssText="position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,.82);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:18px";
+    const status=t?.status||"not_found";
+    const label=status==="completed"?"✅ Payment Verified":status==="payment_rejected"?"❌ Payment Rejected":status==="refunded"?"💸 Refunded":status==="payment_pending"?"⏳ Payment Pending":"🔎 Order Not Found";
+    const note=status==="completed"?"Credits have been added to your account.":status==="payment_pending"?"Your payment is waiting for Admin verification.":status==="payment_rejected"?"The payment was rejected by Admin.":"Please check the order details.";
+    box.innerHTML='<div style="width:min(460px,100%);background:#100b1d;border:1px solid rgba(168,85,247,.5);border-radius:22px;padding:22px;color:#fff;text-align:center"><div style="font-size:13px;color:#22d3ee;font-weight:900">PAYMENT STATUS</div><h2>'+label+'</h2><p style="color:#bbb">'+note+'</p><div style="margin:14px 0;padding:12px;border-radius:14px;background:rgba(255,255,255,.05)">Order ID: <code>'+orderId+'</code></div><button class="mf-admin-btn" onclick="document.getElementById(\'mf-payment-status\').remove()">Close</button></div>';
+    document.body.appendChild(box);
+  }catch(e){ alert("Status check failed: "+e.message); }
+}
 
 async function openCouponManager(){
   let box=document.getElementById("mf-coupon-panel"); if(box)box.remove();
