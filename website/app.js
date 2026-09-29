@@ -223,73 +223,86 @@ async function showDashboard(){
     document.body.insertBefore(dash, document.querySelector(".bottom-nav"));
 
     dash.innerHTML = `
-      <div style="max-width:900px;margin:auto">
-        <div class="card" style="margin-bottom:20px">
-          <h2>🔥 MafiaFF Glory Dashboard</h2>
+      <div class="mf-dash-wrap">
+        <div class="mf-dash-hero">
+          <div class="mf-dash-kicker">MAFIAFF GLORY</div>
+          <h2>Welcome to your<br><span>Glory Dashboard</span></h2>
           <p id="mf-user">Loading account...</p>
         </div>
 
-        <div class="card" style="margin-bottom:20px;background:linear-gradient(145deg,#171025,#080611);border:1px solid rgba(34,211,238,.35)">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-            <div>
-              <small style="color:#aaa">💎 AVAILABLE CREDITS</small>
-              <div id="mf-credit-balance" style="font-size:34px;font-weight:900;color:#ffd166;margin-top:4px">—</div>
-              <div id="mf-credit-summary" style="color:#aaa;font-size:13px">Loading credit balance...</div>
-            </div>
-            <button class="mf-admin-btn" onclick="openCreditHistory()">📋 Credit History</button>
+        <div class="mf-wallet-card">
+          <div>
+            <div class="mf-wallet-label">💎 AVAILABLE CREDITS</div>
+            <div id="mf-credit-balance" class="mf-wallet-balance">—</div>
+            <div id="mf-credit-summary" class="mf-wallet-summary">Loading credit balance...</div>
           </div>
+          <button class="mf-glow-btn" onclick="openCreditHistory()">📋 Credit History</button>
         </div>
 
-        <div class="grid">
-          <div class="card">
-            <h3>👥 Groups</h3>
-            <p>Manage your FF groups.</p>
-            <button class="btn" onclick="document.getElementById('mf-groups-inline').style.display='block'">Open</button>
-              <div id="mf-groups-inline" style="display:none;margin-top:15px;padding:18px;background:#080611;border:1px solid #a855f7;border-radius:16px">
-                <h3 style="position:relative;padding-right:50px">✨ My Groups
-<button type="button" onclick="document.getElementById('mf-groups-inline').style.display='none'" style="position:absolute;right:0;top:-8px;width:38px;height:38px;background:#ff4d6d;color:white;border:0;border-radius:50%;font-size:20px;font-weight:bold;cursor:pointer">✕</button>
-</h3>
-                <div id="mf-groups-inline-list" style="margin:12px 0">Loading...</div>
-                <input id="mf-inline-name" placeholder="Group name" style="width:100%;padding:12px;margin:6px 0">
-                <select id="mf-inline-region" style="width:100%;padding:12px;margin:6px 0;border-radius:10px;background:#080611;color:white;border:1px solid #a855f7">
-  <option value="">Select Region</option>
-  <option value="India">🇮🇳 India</option>
-  <option value="Bangladesh">🇧🇩 Bangladesh</option>
-  <option value="Pakistan">🇵🇰 Pakistan</option>
-  <option value="Other">🌍 Other</option>
-</select>
-                <button class="btn" onclick="createInlineGroup()">Create Group</button>
-                <p id="mf-inline-msg"></p>
+        <div class="mf-dash-section-title">
+          <span>Quick Access</span>
+          <small>Everything you need</small>
+        </div>
+
+        <div class="mf-dash-grid">
+          <div class="mf-dash-card mf-card-groups">
+            <div class="mf-dash-icon">👥</div>
+            <h3>My Groups</h3>
+            <p>Manage your Free Fire groups and regions.</p>
+            <button class="mf-glow-btn" onclick="document.getElementById('mf-groups-inline').style.display='block'">Open Groups</button>
+            <div id="mf-groups-inline" class="mf-inline-panel" style="display:none">
+              <div class="mf-inline-head">
+                <h3>✨ My Groups</h3>
+                <button type="button" onclick="document.getElementById('mf-groups-inline').style.display='none'" class="mf-close-circle">✕</button>
               </div>
+              <div id="mf-groups-inline-list" style="margin:12px 0">Loading...</div>
+              <input id="mf-inline-name" placeholder="Group name">
+              <select id="mf-inline-region">
+                <option value="">Select Region</option>
+                <option value="India">🇮🇳 India</option>
+                <option value="Bangladesh">🇧🇩 Bangladesh</option>
+                <option value="Pakistan">🇵🇰 Pakistan</option>
+                <option value="Other">🌍 Other</option>
+              </select>
+              <button class="mf-glow-btn" onclick="createInlineGroup()">Create Group</button>
+              <p id="mf-inline-msg"></p>
+            </div>
           </div>
 
-          <div class="card">
-            <h3>💎 Pricing</h3>
-            <p>View available plans.</p>
-            <button class="btn" onclick="openPricingManager()">Open</button>
+          <div class="mf-dash-card mf-card-pricing">
+            <div class="mf-dash-icon">💎</div>
+            <h3>Pricing</h3>
+            <p>Choose a plan and add credits to your account.</p>
+            <button class="mf-glow-btn" onclick="openPricingManager()">View Pricing</button>
           </div>
 
-          <div class="card">
-            <h3>🎟️ Coupons</h3>
-            <p>Redeem your coupon code and check your redeemed coupons.</p>
-            <button class="btn" onclick="openCouponManager()">🎟️ Open Coupons</button>
+          <div class="mf-dash-card mf-card-coupons">
+            <div class="mf-dash-icon">🎟️</div>
+            <h3>Coupons</h3>
+            <p>Redeem coupon codes and view your rewards.</p>
+            <button class="mf-glow-btn" onclick="openCouponManager()">Redeem Coupon</button>
           </div>
 
-          <div class="card">
-            <h3>💳 Transactions</h3>
-            <p>View your transactions.</p>
-            <button class="btn" onclick="openDashboardApi('Transactions', '/api/transactions')">Open</button>
+          <div class="mf-dash-card mf-card-transactions">
+            <div class="mf-dash-icon">💳</div>
+            <h3>Transactions</h3>
+            <p>Check payment status, orders and credit history.</p>
+            <button class="mf-glow-btn" onclick="openDashboardApi('Transactions', '/api/transactions')">View Orders</button>
           </div>
         </div>
 
-        <div id="mf-admin-card" class="card mf-admin-card" style="display:none;margin-top:18px">
-  <h3>🛡️ Admin Control Center</h3>
-  <p>Private administrator tools. Customers cannot see this panel.</p>
-  <button class="mf-admin-btn" onclick="openAdminPanel()">Open Admin Panel</button>
-</div>
-<button class="btn" style="margin-top:25px" onclick="logoutUser()">Logout</button>
+        <div id="mf-admin-card" class="mf-admin-card mf-dash-admin" style="display:none">
+          <div>
+            <div class="mf-dash-icon">🛡️</div>
+            <h3>Admin Control Center</h3>
+            <p>Private administrator tools.</p>
+          </div>
+          <button class="mf-glow-btn" onclick="openAdminPanel()">Open Admin</button>
+        </div>
+
+        <button class="mf-logout-btn" onclick="logoutUser()">Logout</button>
       </div>
-    `;
+    `;;
   }
 
   dash.style.display="block";
