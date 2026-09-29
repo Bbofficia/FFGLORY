@@ -295,6 +295,66 @@ app.get('/api/me',async(req,res)=>{
   res.json({user:req.user,credits});
 });
 
+async function getPersistentProducts(){
+  if(!supabaseUrl||!supabaseServiceKey) return null;
+  const rows=await supabaseRequest('GET','products?select=id,name,description,price,stock,status,image_url,delivery_text,created_at&order=created_at.desc');
+  return Array.isArray(rows)?rows:null;
+}
+async function savePersistentProduct(row){
+  if(!supabaseUrl||!supabaseServiceKey) return false;
+  await supabaseRequest('POST','products?on_conflict=id',[{
+    id:row.id,name:row.name,description:row.description||'',price:Number(row.price||0),stock:Number(row.stock??-1),
+    status:row.status||'active',image_url:row.imageUrl||null,delivery_text:row.deliveryText||'',created_at:row.createdAt||new Date().toISOString()
+  }]);
+  return true;
+}
+async function updatePersistentProduct(row){
+  if(!supabaseUrl||!supabaseServiceKey) return false;
+  await supabaseRequest('PATCH','products?id=eq.'+encodeURIComponent(row.id),{
+    name:row.name,description:row.description||'',price:Number(row.price||0),stock:Number(row.stock??-1),
+    status:row.status||'active',image_url:row.imageUrl||null,delivery_text:row.deliveryText||''
+  });
+  return true;
+}
+
+app.get('/api/products',async(req,res)=>{
+  try{
+    const persistent=await getPersistentProducts();
+    if(persistent) return res.json({products:persistent.map(x=>({id:x.id,name:x.name,description:x.description||'',price:Number(x.price||0),stock:Number(x.stock??-1),status:x.status||'active',imageUrl:x.image_url||'',deliveryText:x.delivery_text||'',createdAt:x.created_at}))});
+  }catch(e){}
+  const rows=readJson('products.json',[]);
+  res.json({products:rows.filter(x=>x.status!=='hidden')});
+});
+
+app.post('/api/products/:id/order',appAuth,async(req,res)=>{
+  const id=String(req.params.id); let product=null;
+  try{ const p=await getPersistentProducts(); if(Array.isArray(p)) product=p.find(x=>String(x.id)===id)||null; }catch(e){}
+  if(!product){ const rows=readJson('products.json',[]); product=rows.find(x=>String(x.id)===id)||null; }
+  if(!product||product.status!=='active') return res.status(404).json({error:'Product not available'});
+  const stock=Number(product.stock??-1); if(stock===0) return res.status(400).json({error:'Out of stock'});
+  const tx={id:crypto.randomUUID(),userId:userKey(req),planId:'product:'+id,planName:product.name,amount:Number(product.price||0),credits:0,status:'payment_pending',type:'product_purchase',orderId:id,createdAt:new Date().toISOString()};
+  const rows=readJson('transactions.json',[]); rows.push(tx); writeJson('transactions.json',rows); try{await savePersistentTransaction(tx)}catch(e){}
+  audit(req,'product.order.create',id); res.status(201).json({ok:true,order:tx,product:{id:product.id,name:product.name,price:Number(product.price||0),deliveryText:product.deliveryText||''}});
+});
+
+app.get('/admin/products',appAuth,adminOnly,async(req,res)=>{
+  try{const p=await getPersistentProducts(); if(Array.isArray(p)) return res.json({products:p.map(x=>({id:x.id,name:x.name,description:x.description||'',price:Number(x.price||0),stock:Number(x.stock??-1),status:x.status||'active',imageUrl:x.image_url||'',deliveryText:x.delivery_text||'',createdAt:x.created_at}))});}catch(e){}
+  res.json({products:readJson('products.json',[])});
+});
+app.post('/admin/products',appAuth,adminOnly,async(req,res)=>{
+  const row={id:crypto.randomUUID(),name:String(req.body?.name||'').trim().slice(0,100),description:String(req.body?.description||'').trim().slice(0,1000),price:Math.max(0,Number(req.body?.price||0)),stock:Number(req.body?.stock??-1),status:req.body?.status==='inactive'?'inactive':'active',imageUrl:String(req.body?.image_url||'').trim().slice(0,500),deliveryText:String(req.body?.delivery_text||'').trim().slice(0,2000),createdAt:new Date().toISOString()};
+  if(!row.name)return res.status(400).json({error:'Product name is required'}); if(!Number.isFinite(row.price))return res.status(400).json({error:'Invalid price'});
+  const rows=readJson('products.json',[]); rows.push(row); writeJson('products.json',rows); try{await savePersistentProduct(row)}catch(e){}
+  audit(req,'admin.product.create',row.id); res.status(201).json({ok:true,product:row});
+});
+app.patch('/admin/products/:id',appAuth,adminOnly,async(req,res)=>{
+  const id=String(req.params.id); let row=null; try{const p=await getPersistentProducts(); if(Array.isArray(p)){const x=p.find(v=>String(v.id)===id); if(x) row={id:x.id,name:x.name,description:x.description||'',price:Number(x.price||0),stock:Number(x.stock??-1),status:x.status||'active',imageUrl:x.image_url||'',deliveryText:x.delivery_text||'',createdAt:x.created_at};}}catch(e){}
+  const rows=readJson('products.json',[]); if(!row) row=rows.find(x=>String(x.id)===id)||null; if(!row)return res.status(404).json({error:'Product not found'});
+  if(req.body?.name!==undefined)row.name=String(req.body.name).trim().slice(0,100); if(req.body?.description!==undefined)row.description=String(req.body.description).trim().slice(0,1000); if(req.body?.price!==undefined)row.price=Math.max(0,Number(req.body.price)); if(req.body?.stock!==undefined)row.stock=Number(req.body.stock); if(req.body?.status!==undefined)row.status=req.body.status==='inactive'?'inactive':'active'; if(req.body?.image_url!==undefined)row.imageUrl=String(req.body.image_url).trim().slice(0,500); if(req.body?.delivery_text!==undefined)row.deliveryText=String(req.body.delivery_text).trim().slice(0,2000);
+  const i=rows.findIndex(x=>String(x.id)===id); if(i>=0)rows[i]=row; else rows.push(row); writeJson('products.json',rows); try{await updatePersistentProduct(row)}catch(e){} audit(req,'admin.product.update',id); res.json({ok:true,product:row});
+});
+app.delete('/admin/products/:id',appAuth,adminOnly,async(req,res)=>{const id=String(req.params.id);const rows=readJson('products.json',[]);const next=rows.filter(x=>String(x.id)!==id);if(next.length===rows.length)return res.status(404).json({error:'Product not found'});writeJson('products.json',next);try{if(supabaseUrl&&supabaseServiceKey)await supabaseRequest('DELETE','products?id=eq.'+encodeURIComponent(id))}catch(e){}audit(req,'admin.product.delete',id);res.json({ok:true});});
+
 app.get('/api/pricing',async(req,res)=>{
   try{
     const plans=await getPersistentPricing();
