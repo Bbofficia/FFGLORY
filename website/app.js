@@ -240,6 +240,7 @@ async function showDashboard(){
         <div class="mf-dash-grid">
           <div class="mf-dash-card"><div class="mf-dash-icon">🛍️</div><h3>Panel Store</h3><p>Browse products and place orders.</p><button class="mf-glow-btn" onclick="openProductStore()">🛒 Browse Products</button></div>
           <div class="mf-dash-card"><div class="mf-dash-icon">💳</div><h3>Payments</h3><p>Product payments and order status.</p><button class="mf-glow-btn" onclick="openProductStore()">💳 View Products</button></div>
+          <div class="mf-dash-card"><div class="mf-dash-icon">💰</div><h3>Add Funds</h3><p>Add balance by UPI and send payment for admin verification.</p><button class="mf-glow-btn" onclick="openAddFunds()">💰 Add Funds</button></div>
           <div class="mf-dash-card mf-card-transactions"><div class="mf-dash-icon">📦</div><h3>My Orders</h3><p>Track payments and purchase history.</p><button class="mf-glow-btn" onclick="openDashboardApi('My Orders','/api/transactions')">📋 View Orders</button></div>
           <div class="mf-dash-card"><div class="mf-dash-icon">💬</div><h3>Support</h3><p>Direct Telegram support: @TeamPro78</p><button class="mf-glow-btn" onclick="window.open('https://t.me/TeamPro78','_blank')">💬 @TeamPro78</button></div>
           <div class="mf-dash-card"><div class="mf-dash-icon">📢</div><h3>Telegram Group</h3><p>Join the official FFMAFIA.PANEL Telegram group.</p><button class="mf-glow-btn" onclick="window.open('https://t.me/mafiaffglory','_blank')">📢 Join Group</button></div>
@@ -348,6 +349,31 @@ async function orderPanelProduct(id){
     document.body.appendChild(box);
   }catch(e){alert("❌ "+e.message);}
 }
+async function openAddFunds(){
+  let box=document.getElementById("mf-add-funds"); if(box)box.remove();
+  box=document.createElement("div"); box.id="mf-add-funds"; box.className="mf-product-modal";
+  box.innerHTML='<div class="mf-product-box mf-payment-box"><div class="mf-pay-head"><div><small>ACCOUNT FUNDING</small><h2>💰 Add Funds</h2></div><button class="mf-admin-btn" onclick="this.closest(\'#mf-add-funds\').remove()">✕</button></div><p style="color:#aaa">Enter the amount you want to add to your account.</p><input id="mf-fund-amount" type="number" min="1" step="1" placeholder="Amount ₹" style="width:100%;box-sizing:border-box;padding:13px;border-radius:12px;border:1px solid #34264d;background:#080611;color:#fff;margin:10px 0"><button class="mf-paid-btn" onclick="createFundOrder()">Continue to Payment</button><p class="mf-pay-note">Use your UPI ID/QR shown on the next screen. After payment, press “I Have Paid”.</p></div>';
+  document.body.appendChild(box);
+}
+async function createFundOrder(){
+  const amount=Number(document.getElementById("mf-fund-amount")?.value||0);
+  if(!Number.isFinite(amount)||amount<1){alert("Enter a valid amount.");return;}
+  try{
+    const d=await api("/api/fund-orders",{method:"POST",body:JSON.stringify({amount})});
+    const box=document.getElementById("mf-add-funds"); if(box)box.remove();
+    let pay=document.getElementById("mf-fund-pay"); if(pay)pay.remove();
+    pay=document.createElement("div"); pay.id="mf-fund-pay"; pay.className="mf-product-modal";
+    const upi=d.upiId||""; const orderId=d.order?.id||"";
+    const link=upi?"upi://pay?pa="+encodeURIComponent(upi)+"&pn="+encodeURIComponent("FFMAFIA.PANEL")+"&am="+encodeURIComponent(amount)+"&cu=INR&tn="+encodeURIComponent(orderId):"";
+    pay.innerHTML='<div class="mf-product-box mf-payment-box"><div class="mf-pay-head"><div><small>ADD FUNDS</small><h2>💳 Complete Payment</h2></div><button class="mf-admin-btn" onclick="this.closest(\'#mf-fund-pay\').remove()">✕</button></div><div class="mf-pay-product"><b>Account Fund</b><strong>₹'+amount+'</strong></div>'+(d.qrUrl?'<div class="mf-pay-qr-wrap"><img class="mf-pay-qr" src="'+d.qrUrl+'" alt="Payment QR"><span>Scan with any UPI app</span></div>':'')+(upi?'<div class="mf-upi-row"><div><small>UPI ID</small><b id="mf-fund-upi">'+upi+'</b></div><button class="mf-copy-upi" onclick="navigator.clipboard?.writeText(document.getElementById(\'mf-fund-upi\').textContent).then(()=>alert(\'✅ UPI ID copied\'))">COPY</button></div><a class="mf-pay-now" href="'+link+'">📲 Pay Now with UPI App</a>':'')+'<div class="mf-order-id"><span>Order ID</span><b>'+orderId+'</b></div><button class="mf-paid-btn" onclick="confirmFundPayment(\''+orderId+'\')">✓ I Have Paid</button><p class="mf-pay-note">Admin verify করার পর fund order completed হবে.</p></div>';
+    document.body.appendChild(pay);
+  }catch(e){alert("❌ "+e.message);}
+}
+async function confirmFundPayment(orderId){
+  try{await api("/api/fund-orders/"+encodeURIComponent(orderId)+"/confirm-payment",{method:"POST"});alert("✅ Fund payment submitted. Admin will verify it.");const b=document.getElementById("mf-fund-pay");if(b)b.remove();}
+  catch(e){alert("❌ "+e.message);}
+}
+
 function copyPanelUpi(){
   const el=document.getElementById("mf-pay-upi");
   if(!el)return;
