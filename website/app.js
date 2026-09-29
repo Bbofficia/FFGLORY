@@ -247,16 +247,17 @@ async function showDashboard(){
         <div class="mf-dash-grid">
           <div class="mf-dash-card mf-card-groups">
             <div class="mf-dash-icon">👥</div>
-            <h3>My Groups</h3>
-            <p>Manage your Free Fire groups and regions.</p>
-            <button class="mf-glow-btn" onclick="document.getElementById('mf-groups-inline').style.display='block'">Open Groups</button>
+            <h3>My Guilds</h3>
+            <p>Save your Guild ID once and use it for Glory Push.</p>
+            <button class="mf-glow-btn" onclick="document.getElementById('mf-groups-inline').style.display='block'">Open My Guilds</button>
             <div id="mf-groups-inline" class="mf-inline-panel" style="display:none">
               <div class="mf-inline-head">
-                <h3>✨ My Groups</h3>
+                <h3>🏰 My Guilds</h3>
                 <button type="button" onclick="document.getElementById('mf-groups-inline').style.display='none'" class="mf-close-circle">✕</button>
               </div>
               <div id="mf-groups-inline-list" style="margin:12px 0">Loading...</div>
-              <input id="mf-inline-name" placeholder="Group name">
+              <input id="mf-inline-name" placeholder="Guild name">
+              <input id="mf-inline-guild-id" placeholder="Guild ID">
               <select id="mf-inline-region">
                 <option value="">Select Region</option>
                 <option value="India">🇮🇳 India</option>
@@ -264,7 +265,7 @@ async function showDashboard(){
                 <option value="Pakistan">🇵🇰 Pakistan</option>
                 <option value="Other">🌍 Other</option>
               </select>
-              <button class="mf-glow-btn" onclick="createInlineGroup()">Create Group</button>
+              <button class="mf-glow-btn" onclick="createInlineGroup()">Save Guild</button>
               <p id="mf-inline-msg"></p>
             </div>
           </div>
@@ -359,6 +360,7 @@ async function openGloryManager(){
       </div>
       <div style="margin-top:18px;padding:15px;border-radius:18px;background:#100b1d;border:1px solid rgba(34,211,238,.25)">
         <div class="mf-glory-grid">
+          <div style="grid-column:1/-1"><small style="color:#aaa">Saved Guild</small><select id="mf-saved-guild" onchange="useSavedGloryGuild()"><option value="">Select a saved Guild</option></select></div>
           <div><small style="color:#aaa">Guild ID</small><input id="mf-guild-id" placeholder="Enter Guild ID"></div>
           <div><small style="color:#aaa">Region</small><select id="mf-glory-region"><option value="">Select Region</option><option>India</option><option>Bangladesh</option><option>Pakistan</option><option>Other</option></select></div>
           <div><small style="color:#aaa">Bot Count</small><select id="mf-bot-count" onchange="updateGloryBotCost()"><option value="4">4 Bots — 1 Credit</option><option value="8">8 Bots — 2 Credits</option></select></div>
@@ -370,7 +372,25 @@ async function openGloryManager(){
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px"><h3 style="margin:0">📊 My Orders</h3><button class="mf-admin-btn" onclick="loadGloryOrders()">🔄 Refresh</button></div>
       <div id="mf-glory-orders" style="margin-top:8px">Loading...</div>
     </div>`;
-  document.body.appendChild(box); loadGloryOrders();
+  document.body.appendChild(box);
+  loadSavedGloryGuilds();
+  loadGloryOrders();
+}
+async function loadSavedGloryGuilds(){
+  const select=document.getElementById("mf-saved-guild"); if(!select)return;
+  try{
+    const d=await api("/api/groups");
+    const rows=d.groups||[];
+    select.innerHTML='<option value="">Select a saved Guild</option>'+rows.map(g=>'<option value="'+String(g.id)+'" data-guild="'+String(g.clan_id||"")+'" data-region="'+String(g.region||"")+'">'+String(g.name||"Guild")+' — '+String(g.clan_id||"No ID")+'</option>').join("");
+  }catch(e){}
+}
+function useSavedGloryGuild(){
+  const select=document.getElementById("mf-saved-guild");
+  const opt=select?.selectedOptions?.[0];
+  if(!opt)return;
+  const id=document.getElementById("mf-guild-id"), region=document.getElementById("mf-glory-region");
+  if(id)id.value=opt.dataset.guild||"";
+  if(region&&opt.dataset.region)region.value=opt.dataset.region;
 }
 function updateGloryBotCost(){
   const bots=Number(document.getElementById("mf-bot-count")?.value||4);
