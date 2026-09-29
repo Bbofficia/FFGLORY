@@ -334,7 +334,7 @@ app.post('/api/products/:id/order',appAuth,async(req,res)=>{
   const stock=Number(product.stock??-1); if(stock===0) return res.status(400).json({error:'Out of stock'});
   const tx={id:crypto.randomUUID(),userId:userKey(req),planId:'product:'+id,planName:product.name,amount:Number(product.price||0),credits:0,status:'payment_pending',type:'product_purchase',orderId:id,createdAt:new Date().toISOString()};
   const rows=readJson('transactions.json',[]); rows.push(tx); writeJson('transactions.json',rows); try{await savePersistentTransaction(tx)}catch(e){}
-  audit(req,'product.order.create',id); res.status(201).json({ok:true,order:tx,product:{id:product.id,name:product.name,price:Number(product.price||0),deliveryText:product.deliveryText||''}});
+  audit(req,'product.order.create',id); res.status(201).json({ok:true,order:tx,upiId:process.env.PAYMENT_UPI_ID||'',qrUrl:'https://raw.githubusercontent.com/Bbofficia/FFGLORY/main/phonepe-qr.svg',product:{id:product.id,name:product.name,price:Number(product.price||0),deliveryText:product.deliveryText||''}});
 });
 
 app.get('/admin/products',appAuth,adminOnly,async(req,res)=>{
