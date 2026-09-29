@@ -363,44 +363,54 @@ app.post('/api/groups/action',(req,res)=>{
   res.json({ok:true,group:row});
 });
 
-app.get('/api/coupons',(req,res)=>{
+app.get('/api/coupons',async(req,res)=>{
+  try{
+    const rows=await getPersistentCoupons(userKey(req));
+    if(Array.isArray(rows)) return res.json({coupons:rows});
+  }catch(e){}
   const rows=readJson("coupons.json",[]);
   res.json({coupons:rows.filter(x=>String(x.userId)===String(userKey(req)))});
 });
 
-app.post('/api/coupons',(req,res)=>{
-  const rows=readJson("coupons.json",[]);
-  const row={id:crypto.randomUUID(),userId:userKey(req),
-    code:"MF-"+crypto.randomBytes(4).toString("hex").toUpperCase(),
-    basic_credits:Number(req.body?.basic_credits||0),
-    premium_credits:Number(req.body?.premium_credits||0),
-    status:"active",createdAt:new Date().toISOString()};
-  rows.push(row);writeJson("coupons.json",rows);
+app.post('/api/coupons',async(req,res)=>{
+  const row={id:crypto.randomUUID(),userId:userKey(req),code:"MF-"+crypto.randomBytes(4).toString("hex").toUpperCase(),basic_credits:Number(req.body?.basic_credits||0),premium_credits:Number(req.body?.premium_credits||0),status:"active",createdAt:new Date().toISOString()};
+  const rows=readJson("coupons.json",[]); rows.push(row); writeJson("coupons.json",rows);
+  try{ if(await savePersistentCoupon(row)) return res.status(201).json({coupon:row}); }catch(e){}
   res.status(201).json({coupon:row});
 });
 
-app.post('/api/coupons/redeem',(req,res)=>{
-  const rows=readJson("coupons.json",[]);
+app.post('/api/coupons/redeem',async(req,res)=>{
   const code=String(req.body?.code||"").trim().toUpperCase();
-  const row=rows.find(x=>x.code===code&&x.status==="active");
+  let row=null;
+  try{ const rows=await getPersistentCoupons(""); row=rows?.find(x=>x.code===code&&x.status==="active")||null; }catch(e){}
+  if(!row){
+    const rows=readJson("coupons.json",[]); row=rows.find(x=>x.code===code&&x.status==="active");
+  }
   if(!row)return res.status(404).json({error:"Coupon not found"});
   row.status="redeemed";row.redeemedBy=userKey(req);row.redeemedAt=new Date().toISOString();
-  writeJson("coupons.json",rows);res.json({ok:true,coupon:row});
-});
-
-app.get('/api/coupons/redeemed',(req,res)=>{
-  const rows=readJson("coupons.json",[]);
-  res.json({coupons:rows.filter(x=>x.redeemedBy===userKey(req))});
-});
-
-app.post('/api/coupons/cancel',(req,res)=>{
-  const rows=readJson("coupons.json",[]);
-  const code=String(req.body?.code||"").trim().toUpperCase();
-  const row=rows.find(x=>x.code===code&&x.userId===userKey(req));
-  if(!row)return res.status(404).json({error:"Coupon not found"});
-  row.status="cancelled";writeJson("coupons.json",rows);
+  const rows=readJson("coupons.json",[]); const local=rows.find(x=>String(x.id)===String(row.id)); if(local) Object.assign(local,row); else rows.push(row); writeJson("coupons.json",rows);
+  try{ await updatePersistentCoupon(row); }catch(e){}
   res.json({ok:true,coupon:row});
 });
+
+app.get('/api/coupons/redeemed',async(req,res)=>{
+  try{
+    const rows=await getPersistentCoupons(""); if(Array.isArray(rows)) return res.json({coupons:rows.filter(x=>x.redeemedBy===userKey(req))});
+  }catch(e){}
+  const rows=readJson("coupons.json",[]); res.json({coupons:rows.filter(x=>x.redeemedBy===userKey(req))});
+});
+
+app.post('/api/coupons/cancel',async(req,res)=>{
+  const code=String(req.body?.code||"").trim().toUpperCase();
+  let row=null;
+  try{ const rows=await getPersistentCoupons(userKey(req)); row=rows?.find(x=>x.code===code&&x.userId===userKey(req))||null; }catch(e){}
+  if(!row){ const rows=readJson("coupons.json",[]); row=rows.find(x=>x.code===code&&x.userId===userKey(req)); }
+  if(!row)return res.status(404).json({error:"Coupon not found"});
+  row.status="cancelled"; const rows=readJson("coupons.json",[]); const local=rows.find(x=>String(x.id)===String(row.id)); if(local) Object.assign(local,row); else rows.push(row); writeJson("coupons.json",rows);
+  try{ await updatePersistentCoupon(row); }catch(e){}
+  res.json({ok:true,coupon:row});
+});
+
 
 app.post('/api/transactions',async(req,res)=>{
   const rows=readJson("transactions.json",[]);
@@ -500,6 +510,23 @@ async function getAllPersistentTransactions(){
   const rows=await supabaseRequest('GET','transactions?select=id,user_id,plan_id,plan_name,amount,credits,status,type,order_id,created_at&order=created_at.desc');
   return Array.isArray(rows)?rows.map(x=>({id:x.id,userId:x.user_id,planId:x.plan_id||'',planName:x.plan_name||'',amount:Number(x.amount||0),credits:Number(x.credits||0),status:x.status||'pending',type:x.type||'payment',orderId:x.order_id||undefined,createdAt:x.created_at})):null;
 }
+async function getPersistentCoupons(userId){
+  if(!supabaseUrl||!supabaseServiceKey) return null;
+  const q=userId?('user_id=eq.'+encodeURIComponent(userId)+'&'): '';
+  const rows=await supabaseRequest('GET','coupons?'+q+'select=id,user_id,code,basic_credits,premium_credits,status,redeemed_by,redeemed_at,created_at&order=created_at.desc');
+  return Array.isArray(rows)?rows.map(x=>({id:x.id,userId:x.user_id,code:x.code,basic_credits:Number(x.basic_credits||0),premium_credits:Number(x.premium_credits||0),status:x.status||'active',redeemedBy:x.redeemed_by||undefined,redeemedAt:x.redeemed_at||undefined,createdAt:x.created_at})):null;
+}
+async function savePersistentCoupon(row){
+  if(!supabaseUrl||!supabaseServiceKey) return false;
+  const rows=await supabaseRequest('POST','coupons',[{id:row.id,user_id:row.userId,code:row.code,basic_credits:Number(row.basic_credits||0),premium_credits:Number(row.premium_credits||0),status:row.status||'active',redeemed_by:row.redeemedBy||null,redeemed_at:row.redeemedAt||null,created_at:row.createdAt||new Date().toISOString()}]);
+  return Array.isArray(rows)&&rows.length>0;
+}
+async function updatePersistentCoupon(row){
+  if(!supabaseUrl||!supabaseServiceKey) return false;
+  await supabaseRequest('PATCH','coupons?id=eq.'+encodeURIComponent(row.id),{user_id:row.userId,code:row.code,basic_credits:Number(row.basic_credits||0),premium_credits:Number(row.premium_credits||0),status:row.status||'active',redeemed_by:row.redeemedBy||null,redeemed_at:row.redeemedAt||null,created_at:row.createdAt||new Date().toISOString()});
+  return true;
+}
+
 async function getPersistentTransactionById(id){
   if(!supabaseUrl||!supabaseServiceKey) return null;
   const rows=await supabaseRequest('GET','transactions?id=eq.'+encodeURIComponent(id)+'&select=id,user_id,plan_id,plan_name,amount,credits,status,type,order_id,created_at');
@@ -671,7 +698,10 @@ app.delete('/admin/groups/:id',appAuth,adminOnly,(req,res)=>{
   writeJson("groups.json",next); audit(req,"admin.group.delete",req.params.id);
   res.json({ok:true});
 });
-app.get('/admin/coupons',appAuth,adminOnly,(req,res)=>res.json({coupons:readJson("coupons.json",[])}));
+app.get('/admin/coupons',appAuth,adminOnly,async(req,res)=>{
+  try{ const rows=await getPersistentCoupons(""); if(Array.isArray(rows)) return res.json({coupons:rows}); }catch(e){}
+  res.json({coupons:readJson("coupons.json",[])});
+});
 app.patch('/admin/coupons/:id',appAuth,adminOnly,(req,res)=>{
   const rows=readJson("coupons.json",[]);
   const row=rows.find(x=>String(x.id)===String(req.params.id));
