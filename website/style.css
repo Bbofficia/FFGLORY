@@ -124,3 +124,13 @@ footer{text-align:center;color:#aaa4b8;padding:35px 20px}
   .mf-dash-admin{align-items:flex-start;flex-direction:column}
   .mf-dash-admin .mf-glow-btn{width:100%}
 }
+
+/* FFMAFIA.PANEL animated neon edge */
+.mf-dash-card,.card,.pricing-card,.mf-wallet-card,.mf-product-card,.mf-glory-box,.mf-box,.mf-admin-stat{position:relative;isolation:isolate}
+.mf-dash-card::before,.card::before,.pricing-card::before,.mf-wallet-card::before,.mf-product-card::before,.mf-glory-box::before,.mf-box::before,.mf-admin-stat::before{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;background:linear-gradient(90deg,#a855f7,#22d3ee,#ffd166,#a855f7);background-size:300% 100%;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;animation:ffNeon 4s linear infinite;pointer-events:none;z-index:3;opacity:.9}
+.mf-product-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+.mf-product-card{padding:18px;border-radius:20px;background:linear-gradient(145deg,rgba(18,12,30,.96),rgba(8,20,30,.96));border:1px solid rgba(255,255,255,.12);overflow:hidden}
+.mf-product-card img{width:100%;height:130px;object-fit:cover;border-radius:14px;margin-bottom:12px}
+.mf-product-card h3{font-size:20px;margin:5px 0}.mf-product-card p{color:#c9c3d2;min-height:42px}.mf-product-card strong{display:block;color:#ffd166;font-size:24px;margin:12px 0}
+@keyframes ffNeon{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@media(max-width:600px){.mf-product-grid{grid-template-columns:1fr}.mf-product-card img{height:160px}}
