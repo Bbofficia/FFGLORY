@@ -122,6 +122,30 @@ async function savePersistentPricing(plans){
   await supabaseRequest('POST','pricing?on_conflict=id',plans);
   return true;
 }
+async function getPersistentGloryOrders(userId){
+  if(!supabaseUrl || !supabaseServiceKey) return null;
+  const rows=await supabaseRequest('GET','glory_orders?user_id=eq.'+encodeURIComponent(userId)+'&select=id,user_id,guild_id,region,bot_count,credit_cost,current_glory,progress,status,workers,created_at,updated_at&order=created_at.desc');
+  if(!Array.isArray(rows)) return null;
+  return rows.map(x=>({id:x.id,userId:x.user_id,guildId:x.guild_id,region:x.region||'',botCount:Number(x.bot_count||4),creditCost:Number(x.credit_cost||1),currentGlory:Number(x.current_glory||0),progress:Number(x.progress||0),status:x.status||'queued',workers:Array.isArray(x.workers)?x.workers:[],createdAt:x.created_at,updatedAt:x.updated_at}));
+}
+async function createPersistentGloryOrder(row){
+  if(!supabaseUrl || !supabaseServiceKey) return null;
+  const rows=await supabaseRequest('POST','glory_orders',[{
+    id:row.id,user_id:row.userId,guild_id:row.guildId,region:row.region||'',bot_count:row.botCount||4,credit_cost:row.creditCost||1,
+    current_glory:row.currentGlory||0,progress:row.progress||0,status:row.status||'queued',workers:row.workers||[],
+    created_at:row.createdAt||new Date().toISOString(),updated_at:row.updatedAt||new Date().toISOString()
+  }]);
+  return Array.isArray(rows)&&rows[0]?rows[0]:null;
+}
+async function updatePersistentGloryOrder(row){
+  if(!supabaseUrl || !supabaseServiceKey) return false;
+  await supabaseRequest('PATCH','glory_orders?id=eq.'+encodeURIComponent(row.id),{
+    guild_id:row.guildId,region:row.region||'',bot_count:row.botCount||4,credit_cost:row.creditCost||1,
+    current_glory:row.currentGlory||0,progress:row.progress||0,status:row.status||'queued',workers:row.workers||[],
+    updated_at:row.updatedAt||new Date().toISOString()
+  });
+  return true;
+}
 async function getPersistentGroups(userId){
   if(!supabaseUrl || !supabaseServiceKey) return null;
   const rows=await supabaseRequest('GET','groups?user_id=eq.'+encodeURIComponent(userId)+'&select=id,user_id,name,region,clan_id,status,created_at&order=created_at.desc');
@@ -455,12 +479,16 @@ function calculateCreditBalance(userId){
     .reduce((sum,x)=>sum+Number(x.credits||0),0);
 }
 
-app.get('/api/glory-orders',(req,res)=>{
+app.get('/api/glory-orders',async(req,res)=>{
+  try{
+    const persistent=await getPersistentGloryOrders(userKey(req));
+    if(persistent) return res.json({orders:persistent});
+  }catch(e){}
   const rows=readJson("glory-orders.json",[]);
   res.json({orders:rows.filter(x=>String(x.userId)===String(userKey(req))).reverse()});
 });
 
-app.post('/api/glory-orders',(req,res)=>{
+app.post('/api/glory-orders',async(req,res)=>{
   const rows=readJson("glory-orders.json",[]);
   const transactions=readJson("transactions.json",[]);
   const userId=userKey(req);
@@ -471,18 +499,21 @@ app.post('/api/glory-orders',(req,res)=>{
   if(guildId.length<3) return res.status(400).json({error:"Valid Guild ID is required"});
   if(!region) return res.status(400).json({error:"Region is required"});
   if(![4,8].includes(botCount)) return res.status(400).json({error:"Bot count must be 4 or 8"});
-  if(!Number.isFinite(creditCost)||creditCost<1) return res.status(400).json({error:"Invalid bot credit cost"});
-  const active=rows.find(x=>String(x.userId)===String(userId)&&x.guildId===guildId&&!["completed","cancelled","failed"].includes(x.status));
-  if(active) return res.status(409).json({error:"An active order already exists for this Guild ID"});
   const balance=calculateCreditBalance(userId);
   if(balance<creditCost) return res.status(400).json({error:"Insufficient credits"});
+  let existing=[];
+  try{ existing=(await getPersistentGloryOrders(userId))||[]; }catch(e){}
+  const source=existing.length?existing:rows.filter(x=>String(x.userId)===String(userId));
+  if(source.some(x=>String(x.guildId)===guildId&&!["completed","cancelled","failed"].includes(x.status))){
+    return res.status(409).json({error:"An active order already exists for this Guild ID"});
+  }
   const id=crypto.randomUUID();
   const now=new Date().toISOString();
-  const order={
-    id,userId,guildId,region,botCount,creditCost,currentGlory:0,progress:0,status:"queued",
-    createdAt:now,updatedAt:now,
-    workers:Array.from({length:botCount},(_,i)=>({slot:i+1,status:"waiting",progress:0}))
-  };
+  const order={id,userId,guildId,region,botCount,creditCost,currentGlory:0,progress:0,status:"queued",createdAt:now,updatedAt:now,
+    workers:Array.from({length:botCount},(_,i)=>({slot:i+1,status:"waiting",progress:0}))};
+  try{
+    if(supabaseUrl&&supabaseServiceKey) await createPersistentGloryOrder(order);
+  }catch(e){}
   rows.push(order);
   transactions.push({id:crypto.randomUUID(),userId,planId:"glory-debit",planName:"Glory Order "+id.slice(0,8),amount:0,credits:-creditCost,status:"completed",type:"glory_debit",orderId:id,createdAt:now});
   writeJson("glory-orders.json",rows); writeJson("transactions.json",transactions);
@@ -490,42 +521,63 @@ app.post('/api/glory-orders',(req,res)=>{
   res.status(201).json({ok:true,order,balance:balance-creditCost});
 });
 
-app.post('/api/glory-orders/:id/cancel',(req,res)=>{
+app.post('/api/glory-orders/:id/cancel',async(req,res)=>{
+  const id=String(req.params.id);
+  let row=null;
+  try{
+    const persistent=await getPersistentGloryOrders(userKey(req));
+    if(persistent) row=persistent.find(x=>String(x.id)===id)||null;
+  }catch(e){}
   const rows=readJson("glory-orders.json",[]);
-  const row=rows.find(x=>x.id===String(req.params.id)&&String(x.userId)===String(userKey(req)));
+  if(!row) row=rows.find(x=>x.id===id&&String(x.userId)===String(userKey(req)))||null;
   if(!row)return res.status(404).json({error:"Order not found"});
   if(["completed","cancelled","failed"].includes(row.status))return res.status(400).json({error:"Order cannot be cancelled"});
   row.status="cancelled"; row.updatedAt=new Date().toISOString();
   row.workers=(row.workers||[]).map(w=>({...w,status:"cancelled"}));
+  try{ if(supabaseUrl&&supabaseServiceKey) await updatePersistentGloryOrder(row); }catch(e){}
+  const i=rows.findIndex(x=>x.id===id);
+  if(i>=0) rows[i]=row; else rows.push(row);
   writeJson("glory-orders.json",rows); audit(req,"glory.order.cancel",row.id);
   res.json({ok:true,order:row});
 });
 
-app.get('/admin/glory-orders',appAuth,adminOnly,(req,res)=>{
+app.get('/admin/glory-orders',appAuth,adminOnly,async(req,res)=>{
+  try{
+    if(supabaseUrl&&supabaseServiceKey){
+      const rows=await supabaseRequest('GET','glory_orders?select=id,user_id,guild_id,region,bot_count,credit_cost,current_glory,progress,status,workers,created_at,updated_at&order=created_at.desc');
+      if(Array.isArray(rows)) return res.json({orders:rows.map(x=>({id:x.id,userId:x.user_id,guildId:x.guild_id,region:x.region||'',botCount:Number(x.bot_count||4),creditCost:Number(x.credit_cost||1),currentGlory:Number(x.current_glory||0),progress:Number(x.progress||0),status:x.status||'queued',workers:Array.isArray(x.workers)?x.workers:[],createdAt:x.created_at,updatedAt:x.updated_at}))});
+    }
+  }catch(e){}
   const rows=readJson("glory-orders.json",[]);
   res.json({orders:rows.slice().reverse()});
 });
 
-app.patch('/admin/glory-orders/:id',(req,res)=>{
+app.patch('/admin/glory-orders/:id',async(req,res)=>{
   if(req.user?.role!=="admin") return res.status(403).json({error:"Admin access required"});
   const rows=readJson("glory-orders.json",[]);
-  const row=rows.find(x=>x.id===String(req.params.id));
+  let row=null;
+  try{
+    if(supabaseUrl&&supabaseServiceKey){
+      const found=await supabaseRequest('GET','glory_orders?id=eq.'+encodeURIComponent(String(req.params.id))+'&select=id,user_id,guild_id,region,bot_count,credit_cost,current_glory,progress,status,workers,created_at,updated_at&limit=1');
+      if(Array.isArray(found)&&found[0]){
+        const x=found[0];
+        row={id:x.id,userId:x.user_id,guildId:x.guild_id,region:x.region||'',botCount:Number(x.bot_count||4),creditCost:Number(x.credit_cost||1),currentGlory:Number(x.current_glory||0),progress:Number(x.progress||0),status:x.status||'queued',workers:Array.isArray(x.workers)?x.workers:[],createdAt:x.created_at,updatedAt:x.updated_at};
+      }
+    }
+  }catch(e){}
+  if(!row) row=rows.find(x=>x.id===String(req.params.id));
   if(!row)return res.status(404).json({error:"Order not found"});
   const allowed=["queued","running","completed","failed","paused"];
   if(typeof req.body?.status==="string" && allowed.includes(req.body.status)) row.status=req.body.status;
-  if(req.body?.current_glory!==undefined){
-    const n=Math.max(0,Math.floor(Number(req.body.current_glory)));
-    row.currentGlory=n;
-    row.progress=0;
-  }
-  if(Array.isArray(req.body?.workers)){
-    row.workers=req.body.workers.slice(0,4).map((w,i)=>({slot:i+1,status:String(w.status||"waiting"),progress:Math.max(0,Math.min(100,Number(w.progress||0)))}));
-  }
+  if(req.body?.current_glory!==undefined) row.currentGlory=Math.max(0,Math.floor(Number(req.body.current_glory)));
+  if(req.body?.progress!==undefined) row.progress=Math.max(0,Math.min(100,Number(req.body.progress)));
+  if(Array.isArray(req.body?.workers)) row.workers=req.body.workers.slice(0,row.botCount||4).map((w,i)=>({slot:i+1,status:String(w.status||"waiting"),progress:Math.max(0,Math.min(100,Number(w.progress||0)))}));
   row.updatedAt=new Date().toISOString();
+  try{ if(supabaseUrl&&supabaseServiceKey) await updatePersistentGloryOrder(row); }catch(e){}
+  const i=rows.findIndex(x=>x.id===row.id); if(i>=0) rows[i]=row; else rows.push(row);
   writeJson("glory-orders.json",rows); audit(req,"admin.glory.order.update",row.id);
   res.json({ok:true,order:row});
 });
-
 
 app.get('/admin/overview',appAuth,adminOnly,(req,res)=>{
   const users=Object.values(readUsers());
