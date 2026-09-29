@@ -388,7 +388,7 @@ async function openAdminPanel(){
   const panel=document.createElement("div"); panel.id="mf-admin-panel"; panel.className="mf-admin-panel";
   panel.innerHTML=`
     <div class="mf-admin-shell">
-      <div class="mf-admin-head"><div><h2 style="margin:0">🛡️ FFMAFIA.PANEL Admin</h2><small style="color:#aaa">Private control center</small></div><button class="mf-admin-btn" onclick="document.getElementById('mf-admin-panel').remove()">✕ Close</button></div>
+      <div class="mf-admin-head"><div><h2 style="margin:0">🛡️ FFMAFIA.PANEL Admin</h2><small style="color:#aaa">Panel Store Control Center • Products • Orders • Payments</small></div><button class="mf-admin-btn" onclick="document.getElementById('mf-admin-panel').remove()">✕ Close</button></div>
       <div id="mf-admin-tabs" class="mf-admin-tabs">
         <button onclick="loadAdminTab('overview')">📊 Overview</button><button onclick="loadAdminTab('users')">👥 Users</button><button onclick="loadAdminTab('products')">🛍️ Products</button><button onclick="loadAdminTab('transactions')">📦 Orders & Payments</button><button onclick="loadAdminTab('audit')">📝 Audit</button>
       </div>
