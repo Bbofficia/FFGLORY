@@ -138,7 +138,7 @@ app.post('/auth/login',(req,res)=>{
 app.post('/auth/logout',appAuth,(req,res)=>{const got=(req.get('authorization')||'').replace(/^Bearer\s+/i,''); sessions.delete(tokenHash(got)); writeSessions(Object.fromEntries(sessions)); res.json({ok:true});});
 app.get('/auth/me',appAuth,(req,res)=>res.json({user:req.user}));
 
-app.use('/api',appAuth);
+app.use('/api',(req,res,next)=>{ if(req.method==='GET' && req.path==='/pricing') return next(); appAuth(req,res,next); });
 
 const localFile = name => path.join(dataDir,name);
 function readJson(name,fallback){
