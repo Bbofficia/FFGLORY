@@ -8,10 +8,6 @@ dotenv.config();
 
 const isProduction = process.env.NODE_ENV === 'production';
 const allowedOrigins = String(process.env.CORS_ORIGINS || '').split(',').map(v => v.trim()).filter(Boolean);
-if (isProduction && (!process.env.FFGLORY_API_KEY || !process.env.FFGLORY_MASTER_KEY)) {
-  throw new Error('FFGLORY_API_KEY and FFGLORY_MASTER_KEY are required in production');
-}
-
 const app = express();
 app.disable('x-powered-by');
 app.set('trust proxy', process.env.TRUST_PROXY === 'true' ? 1 : false);
@@ -42,13 +38,12 @@ function rateLimit(req,res,next){
 }
 app.use(rateLimit);
 
-const base=(process.env.FFGLORY_BASE||'https://ffglory.pro').replace(/\/$/,'');
-const accountKey=process.env.FFGLORY_API_KEY; const masterKey=process.env.FFGLORY_MASTER_KEY;
 const appToken=process.env.APP_ACCESS_TOKEN;
 const dataDir=process.env.DATA_DIR || path.resolve(process.cwd(),'data');
 
 const supabaseUrl=String(process.env.SUPABASE_URL||'').replace(/\/$/,'');
 const supabaseServiceKey=String(process.env.SUPABASE_SERVICE_ROLE_KEY||'');
+app.get('/health',(req,res)=>res.json({ok:true,service:'ffmafia-panel',version:'5.0',environment:isProduction?'production':'development',database:!!(supabaseUrl&&supabaseServiceKey),timestamp:new Date().toISOString()}));
 async function supabaseRequest(method, table, body){
   if(!supabaseUrl || !supabaseServiceKey) return null;
   const r=await fetch(supabaseUrl+'/rest/v1/'+table,{
