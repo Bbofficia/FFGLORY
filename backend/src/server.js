@@ -327,9 +327,27 @@ app.post('/api/products/:id/order',appAuth,async(req,res)=>{
   if(!product){ const rows=readJson('products.json',[]); product=rows.find(x=>String(x.id)===id)||null; }
   if(!product||product.status!=='active') return res.status(404).json({error:'Product not available'});
   const stock=Number(product.stock??-1); if(stock===0) return res.status(400).json({error:'Out of stock'});
-  const tx={id:crypto.randomUUID(),userId:userKey(req),planId:'product:'+id,planName:product.name,amount:Number(product.price||0),credits:0,status:'payment_pending',type:'product_purchase',orderId:id,createdAt:new Date().toISOString()};
+  const tx={id:crypto.randomUUID(),userId:userKey(req),planId:'product:'+id,planName:product.name,amount:Number(product.price||0),credits:0,status:'payment_pending',type:'product_purchase',orderId:crypto.randomUUID(),productId:id,createdAt:new Date().toISOString()};
   const rows=readJson('transactions.json',[]); rows.push(tx); writeJson('transactions.json',rows); try{await savePersistentTransaction(tx)}catch(e){}
   audit(req,'product.order.create',id); res.status(201).json({ok:true,order:tx,upiId:process.env.PAYMENT_UPI_ID||'',qrUrl:'https://raw.githubusercontent.com/Bbofficia/FFGLORY/main/phonepe-qr.svg',product:{id:product.id,name:product.name,price:Number(product.price||0),deliveryText:product.deliveryText||''}});
+});
+
+app.post('/api/product-orders/:id/confirm-payment',appAuth,async(req,res)=>{
+  const id=String(req.params.id);
+  const rows=readJson('transactions.json',[]);
+  let row=rows.find(x=>String(x.id)===id&&String(x.userId)===String(userKey(req)));
+  if(!row) row=await getPersistentTransactionById(id);
+  if(!row||row.type!=='product_purchase') return res.status(404).json({error:'Product order not found'});
+  if(row.status==='completed') return res.json({ok:true,transaction:row,message:'Payment already verified'});
+  if(row.status!=='payment_pending'&&row.status!=='payment_submitted') return res.status(400).json({error:'Order is not awaiting payment confirmation'});
+  row.status='payment_submitted';
+  row.paymentSubmittedAt=new Date().toISOString();
+  const local=rows.find(x=>String(x.id)===id);
+  if(local) Object.assign(local,row); else rows.push(row);
+  writeJson('transactions.json',rows);
+  try{ await updatePersistentTransaction(row); }catch(e){}
+  audit(req,'product.order.payment_submitted',id);
+  res.json({ok:true,transaction:row});
 });
 
 app.get('/admin/products',appAuth,adminOnly,async(req,res)=>{
@@ -784,8 +802,27 @@ app.patch('/admin/transactions/:id/verify',appAuth,adminOnly,async(req,res)=>{
   let row=rows.find(x=>String(x.id)===String(req.params.id));
   if(!row) row=await getPersistentTransactionById(req.params.id);
   if(!row)return res.status(404).json({error:"Transaction not found"});
-  if(row.status!=="payment_pending")return res.status(400).json({error:"Only pending payments can be verified"});
+  if(!["payment_pending","payment_submitted"].includes(row.status))return res.status(400).json({error:"Only pending payments can be verified"});
   row.status="completed"; row.verifiedAt=new Date().toISOString(); row.verifiedBy=req.user.id;
+  if(row.type==="product_purchase"){
+    const productId=String(row.productId||String(row.planId||"").replace(/^product:/,""));
+    try{
+      const persistent=await getPersistentProducts();
+      if(Array.isArray(persistent)){
+        const p=persistent.find(x=>String(x.id)===productId);
+        if(p){
+          const stock=Number(p.stock??-1);
+          if(stock===0) return res.status(409).json({error:"Product is out of stock"});
+          if(stock>0){ p.stock=stock-1; await updatePersistentProduct({id:p.id,name:p.name,description:p.description,price:p.price,stock:p.stock,status:p.status,imageUrl:p.image_url||"",deliveryText:p.delivery_text||"",createdAt:p.created_at}); }
+        }
+      }else{
+        const products=readJson("products.json",[]);
+        const p=products.find(x=>String(x.id)===productId);
+        if(p&&Number(p.stock??-1)>0) p.stock=Number(p.stock)-1;
+        writeJson("products.json",products);
+      }
+    }catch(e){ return res.status(500).json({error:"Payment verified but stock update failed"}); }
+  }
   const local=rows.find(x=>String(x.id)===String(req.params.id));
   if(local) Object.assign(local,row);
   else rows.push(row);
