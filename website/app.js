@@ -462,26 +462,19 @@ async function openCreditHistory(){
 
 async function loadInlineGroups(){
   const list=document.getElementById("mf-groups-inline-list");
-  if(!list) return;
-
+  if(!list)return;
   try{
     const data=await api("/api/groups");
     const groups=data.groups||[];
-
     if(!groups.length){
-      list.innerHTML='<div style="color:#aaa">No groups yet.</div>';
+      list.innerHTML='<div style="color:#aaa">No saved Guilds yet.</div>';
       return;
     }
-
     list.innerHTML=groups.map(g=>`
       <div style="padding:14px;margin:8px 0;background:#100b1d;border:1px solid rgba(168,85,247,.35);border-radius:14px">
-        <strong>👥 ${g.name||"Unnamed Group"}</strong>
-        <div style="color:#22d3ee;margin-top:5px">
-          🌍 Region: ${g.region||"Not set"}
-        </div>
-        <div style="color:#999;font-size:12px;margin-top:4px">
-          Status: ${g.status||"active"}
-        </div>
+        <strong>🏰 ${g.name||"Unnamed Guild"}</strong>
+        <div style="color:#22d3ee;margin-top:5px">🆔 Guild ID: ${g.clan_id||"Not set"}</div>
+        <div style="color:#aaa;margin-top:4px">🌍 Region: ${g.region||"Not set"}</div>
       </div>
     `).join("");
   }catch(e){
@@ -491,21 +484,19 @@ async function loadInlineGroups(){
 
 async function createInlineGroup(){
   const msg=document.getElementById("mf-inline-msg");
-  msg.textContent="Creating...";
-
+  const name=document.getElementById("mf-inline-name").value.trim() || "My Guild";
+  const guildId=document.getElementById("mf-inline-guild-id").value.trim();
+  const region=document.getElementById("mf-inline-region").value.trim();
+  if(!guildId){msg.textContent="⚠️ Enter Guild ID";return;}
+  msg.textContent="Saving Guild...";
   try{
-    const name=document.getElementById("mf-inline-name").value.trim() || "My FF Group";
-    const region=document.getElementById("mf-inline-region").value.trim();
-
     const r=await api("/api/groups",{
       method:"POST",
-      body:JSON.stringify({name,region})
+      body:JSON.stringify({name,region,clan_id:guildId})
     });
-
-    msg.textContent="✅ Group created: "+(r.group?.name||"Done");
+    msg.textContent="✅ Guild saved: "+(r.group?.name||"Done");
     document.getElementById("mf-inline-name").value="";
-    document.getElementById("mf-inline-region").value="";
-
+    document.getElementById("mf-inline-guild-id").value="";
     await loadInlineGroups();
   }catch(e){
     msg.textContent="❌ "+e.message;
