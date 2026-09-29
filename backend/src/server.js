@@ -534,11 +534,17 @@ app.post('/api/glory-orders/:id/cancel',async(req,res)=>{
   if(["completed","cancelled","failed"].includes(row.status))return res.status(400).json({error:"Order cannot be cancelled"});
   row.status="cancelled"; row.updatedAt=new Date().toISOString();
   row.workers=(row.workers||[]).map(w=>({...w,status:"cancelled"}));
+  const txRows=readJson("transactions.json",[]);
+  const alreadyRefunded=txRows.some(x=>String(x.orderId)===id&&x.type==="glory_refund"&&x.status==="completed");
+  if(!alreadyRefunded){
+    txRows.push({id:crypto.randomUUID(),userId:row.userId,planId:"glory-refund",planName:"Glory Order Refund "+id.slice(0,8),amount:0,credits:Number(row.creditCost||0),status:"completed",type:"glory_refund",orderId:id,createdAt:new Date().toISOString()});
+    writeJson("transactions.json",txRows);
+  }
   try{ if(supabaseUrl&&supabaseServiceKey) await updatePersistentGloryOrder(row); }catch(e){}
   const i=rows.findIndex(x=>x.id===id);
   if(i>=0) rows[i]=row; else rows.push(row);
   writeJson("glory-orders.json",rows); audit(req,"glory.order.cancel",row.id);
-  res.json({ok:true,order:row});
+  res.json({ok:true,order:row,refunded:!alreadyRefunded,refundCredits:alreadyRefunded?0:Number(row.creditCost||0)});
 });
 
 app.get('/admin/glory-orders',appAuth,adminOnly,async(req,res)=>{
