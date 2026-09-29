@@ -452,3 +452,5 @@ function filterHomeProducts(filter,btn){homeProductFilter=filter;document.queryS
 async function loadHomeProducts(){const box=document.getElementById("home-product-grid");if(!box)return;box.innerHTML='<div class="product-loading">Loading products...</div>';try{const d=await api("/api/products");homeProductsCache=(d.products||[]).filter(p=>String(p.status||"active")==="active");renderHomeProducts();}catch(e){box.innerHTML='<div class="product-loading">❌ Unable to load products. Please refresh.</div>';}}
 function buyHomeProduct(id){if(!localStorage.getItem("ffglory_token")){openAuth(false);return;}orderPanelProduct(id);}
 document.addEventListener("DOMContentLoaded",()=>{loadHomeProducts();});
+
+function searchHomeProducts(term){const q=String(term||"").toLowerCase().trim();const base=homeProductsCache;const filtered=q?base.filter(p=>String((p.name||"")+" "+(p.description||"")).toLowerCase().includes(q)):base;const old=homeProductsCache;homeProductsCache=filtered;renderHomeProducts();homeProductsCache=old;}
