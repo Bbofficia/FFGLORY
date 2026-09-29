@@ -691,8 +691,25 @@ async function openProductStore(){
 async function orderPanelProduct(id){
   try{const d=await api("/api/products/"+encodeURIComponent(id)+"/order",{method:"POST"});let box=document.getElementById("mf-product-pay");if(box)box.remove();box=document.createElement("div");box.id="mf-product-pay";box.className="mf-glory-order-modal";const upi=d.upiId||"";const link=upi?"upi://pay?pa="+encodeURIComponent(upi)+"&pn="+encodeURIComponent("FFMAFIA.PANEL")+"&am="+encodeURIComponent(d.order.amount)+"&cu=INR&tn="+encodeURIComponent(d.order.id):"";box.innerHTML='<div class="mf-glory-box" style="max-width:520px;text-align:center"><h2>💳 Complete Payment</h2><p>'+(d.product.name)+'</p><div style="font-size:34px;color:#ffd166;font-weight:950">₹'+d.order.amount+'</div>'+(d.qrUrl?'<img src="'+d.qrUrl+'" style="width:230px;background:#fff;padding:10px;border-radius:18px" alt="QR">':'')+(upi?'<div style="color:#22d3ee;font-weight:900;margin:10px">'+upi+'</div><a class="mf-glow-btn" href="'+link+'">📲 Pay with UPI</a>':'')+'<p style="font-size:12px;color:#aaa">Order ID: '+d.order.id+'</p><button class="mf-glow-btn" onclick="confirmProductPayment(\''+d.order.id+'\')">✓ I Have Paid</button><button class="mf-admin-btn" onclick="this.closest(\'#mf-product-pay\').remove()">Close</button></div>';document.body.appendChild(box);}catch(e){alert("❌ "+e.message);}
 }
-async function confirmProductPayment(orderId){alert("⏳ Payment confirmation saved. Admin will verify Order ID: "+orderId);const b=document.getElementById("mf-product-pay");if(b)b.remove();}
+async function confirmProductPayment(orderId){
+  try{
+    await api("/api/product-orders/"+encodeURIComponent(orderId)+"/confirm-payment",{method:"POST"});
+    alert("✅ Payment confirmation sent. Admin will verify your order.");
+    const b=document.getElementById("mf-product-pay"); if(b)b.remove();
+  }catch(e){alert("❌ "+e.message);}
+}
 async function adminCreateProduct(){try{await api("/admin/products",{method:"POST",body:JSON.stringify({name:document.getElementById("new-p-name").value,price:Number(document.getElementById("new-p-price").value),stock:Number(document.getElementById("new-p-stock").value),image_url:document.getElementById("new-p-image").value,description:document.getElementById("new-p-desc").value,delivery_text:document.getElementById("new-p-delivery").value})});alert("✅ Product added");loadAdminTab("products");}catch(e){alert("❌ "+e.message);}}
+async function adminUpdateProduct(id){
+  try{
+    await api("/admin/products/"+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify({
+      name:document.getElementById("pn-"+id)?.value||"",
+      price:Number(document.getElementById("pp-"+id)?.value||0),
+      stock:Number(document.getElementById("ps-"+id)?.value??-1),
+      status:document.getElementById("pt-"+id)?.value||"active"
+    })});
+    loadAdminTab("products");
+  }catch(e){alert("❌ "+e.message);}
+}
 async function adminDeleteProduct(id){if(!confirm("Delete this product?"))return;try{await api("/admin/products/"+encodeURIComponent(id),{method:"DELETE"});loadAdminTab("products");}catch(e){alert("❌ "+e.message);}}
 
 async function openAdminPanel(){
@@ -722,7 +739,9 @@ async function loadAdminTab(tab){
     }else if(tab==="groups"){
       const d=await api("/admin/groups");
       box.innerHTML=`<div style="overflow:auto"><table class="mf-admin-table"><tr><th>Name</th><th>Region</th><th>Status</th><th>Action</th></tr>${d.groups.map(g=>`<tr><td>${g.name}</td><td>${g.region||"-"}</td><td>${g.status||"-"}</td><td><button class="mf-admin-btn" onclick="adminDelete('/admin/groups/${g.id}','groups')">Delete</button></td></tr>`).join("")}</table></div>`;
-    }else if(tab==="products"){const d=await api("/admin/products");box.innerHTML='<div style="display:grid;gap:14px"><div class="mf-admin-stat"><h3>🛍️ Add Product</h3><input id="new-p-name" placeholder="Product name"><input id="new-p-price" type="number" placeholder="Price ₹"><input id="new-p-stock" type="number" value="-1" placeholder="Stock (-1 unlimited)"><input id="new-p-image" placeholder="Image URL"><textarea id="new-p-desc" placeholder="Description"></textarea><textarea id="new-p-delivery" placeholder="Delivery instructions"></textarea><button class="mf-admin-btn" onclick="adminCreateProduct()">➕ Add Product</button></div><div style="overflow:auto"><table class="mf-admin-table"><tr><th>Product</th><th>Price</th><th>Stock</th><th>Status</th><th>Action</th></tr>'+(d.products||[]).map(p=>'<tr><td>'+p.name+'</td><td>₹'+p.price+'</td><td>'+(p.stock<0?'Unlimited':p.stock)+'</td><td>'+p.status+'</td><td><button class="mf-admin-btn" onclick="adminDeleteProduct(\''+p.id+'\')">Delete</button></td></tr>').join("")+'</table></div></div>';
+    }else if(tab==="products"){
+      const d=await api("/admin/products");
+      box.innerHTML='<div style="display:grid;gap:14px"><div class="mf-admin-stat"><h3>🛍️ Add Product</h3><input id="new-p-name" placeholder="Product name"><input id="new-p-price" type="number" placeholder="Price ₹"><input id="new-p-stock" type="number" value="-1" placeholder="Stock (-1 unlimited)"><input id="new-p-image" placeholder="Image URL"><textarea id="new-p-desc" placeholder="Description"></textarea><textarea id="new-p-delivery" placeholder="Delivery instructions"></textarea><button class="mf-admin-btn" onclick="adminCreateProduct()">➕ Add Product</button></div><div style="overflow:auto"><table class="mf-admin-table"><tr><th>Product</th><th>Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr>'+(d.products||[]).map(p=>'<tr><td><input id="pn-'+p.id+'" value="'+String(p.name||"").replace(/"/g,"&quot;")+'"></td><td><input id="pp-'+p.id+'" type="number" value="'+Number(p.price||0)+'"></td><td><input id="ps-'+p.id+'" type="number" value="'+Number(p.stock??-1)+'"></td><td><select id="pt-'+p.id+'"><option value="active" '+(p.status==="active"?"selected":"")+'>active</option><option value="inactive" '+(p.status==="inactive"?"selected":"")+'>inactive</option></select></td><td><button class="mf-admin-btn" onclick="adminUpdateProduct(\''+p.id+'\')">Save</button> <button class="mf-admin-btn" onclick="adminDeleteProduct(\''+p.id+'\')">Delete</button></td></tr>').join("")+'</table></div></div>';
     }else if(tab==="pricing"){
       const d=await api("/admin/pricing");
       box.innerHTML=`<div style="display:grid;gap:12px">${d.plans.map((p,i)=>`<div class="mf-admin-stat"><input id="apn${i}" value="${p.name}"> <input id="app${i}" type="number" value="${p.price}"> <input id="apc${i}" type="number" value="${p.credits}"> <input id="api${i}" value="${p.id}" disabled></div>`).join("")}<button class="mf-admin-btn" onclick="saveAdminPricing()">💾 Save Pricing</button></div>`;
