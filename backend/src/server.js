@@ -562,10 +562,14 @@ app.post('/api/glory-orders/:id/cancel',async(req,res)=>{
   row.status="cancelled"; row.updatedAt=new Date().toISOString();
   row.workers=(row.workers||[]).map(w=>({...w,status:"cancelled"}));
   const txRows=readJson("transactions.json",[]);
-  const alreadyRefunded=txRows.some(x=>String(x.orderId)===id&&x.type==="glory_refund"&&x.status==="completed");
+  let persistentTx=[];
+  try{ persistentTx=(await getPersistentTransactions(row.userId))||[]; }catch(e){}
+  const alreadyRefunded=txRows.some(x=>String(x.orderId)===id&&x.type==="glory_refund"&&x.status==="completed") || persistentTx.some(x=>String(x.orderId)===id&&x.type==="glory_refund"&&x.status==="completed");
   if(!alreadyRefunded){
-    txRows.push({id:crypto.randomUUID(),userId:row.userId,planId:"glory-refund",planName:"Glory Order Refund "+id.slice(0,8),amount:0,credits:Number(row.creditCost||0),status:"completed",type:"glory_refund",orderId:id,createdAt:new Date().toISOString()});
+    const refundTx={id:crypto.randomUUID(),userId:row.userId,planId:"glory-refund",planName:"Glory Order Refund "+id.slice(0,8),amount:0,credits:Number(row.creditCost||0),status:"completed",type:"glory_refund",orderId:id,createdAt:new Date().toISOString()};
+    txRows.push(refundTx);
     writeJson("transactions.json",txRows);
+    try{ await savePersistentTransaction(refundTx); }catch(e){}
   }
   try{ if(supabaseUrl&&supabaseServiceKey) await updatePersistentGloryOrder(row); }catch(e){}
   const i=rows.findIndex(x=>x.id===id);
