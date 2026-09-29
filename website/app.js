@@ -80,8 +80,8 @@ modal.className = "mf-modal";
 modal.innerHTML = `
 <div class="mf-box">
 <button class="mf-close">×</button>
-<h2 id="mf-title">MafiaFF Glory</h2>
-<p id="mf-subtitle">Sign in to FFGlory panel</p>
+<h2 id="mf-title">FFMAFIA.PANEL</h2>
+<p id="mf-subtitle">Sign in to FFMAFIA.PANEL panel</p>
 
 <div id="mf-name-wrap" style="display:none">
 <input id="mf-name" placeholder="Full name">
@@ -112,10 +112,10 @@ function openAuth(register=false){
   modal.style.display="flex";
 
   document.getElementById("mf-title").textContent =
-    register ? "Create Account" : "MafiaFF Glory";
+    register ? "Create Account" : "FFMAFIA.PANEL";
 
   document.getElementById("mf-subtitle").textContent =
-    register ? "Create your MafiaFF Glory account" : "Sign in to FFGlory panel";
+    register ? "Create your FFMAFIA.PANEL account" : "Sign in to FFMAFIA.PANEL panel";
 
   document.getElementById("mf-name-wrap").style.display =
     register ? "block" : "none";
@@ -284,7 +284,7 @@ async function showDashboard(){
     const adminCard=document.getElementById("mf-admin-card");
     if(adminCard) adminCard.style.display = user.role === "admin" ? "block" : "none";
   }catch(e){
-    document.getElementById("mf-user").textContent="Welcome to MafiaFF Glory 👑";
+    document.getElementById("mf-user").textContent="Welcome to FFMAFIA.PANEL 👑";
   }
 }
 
@@ -359,13 +359,13 @@ async function loadInlineGroups(){
 
 async function openProductStore(){
   let box=document.getElementById("mf-product-store"); if(box)box.remove();
-  box=document.createElement("div"); box.id="mf-product-store"; box.className="mf-glory-order-modal";
-  box.innerHTML='<div class="mf-glory-box"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="color:#22d3ee;font-weight:900">FFMAFIA.PANEL STORE</div><h2>🛍️ Panel Products</h2></div><button class="mf-admin-btn" onclick="this.closest(\'#mf-product-store\').remove()">✕</button></div><div id="mf-product-list" class="mf-product-grid" style="margin-top:18px">Loading...</div></div>';
+  box=document.createElement("div"); box.id="mf-product-store"; box.className="mf-product-modal";
+  box.innerHTML='<div class="mf-product-box"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="color:#22d3ee;font-weight:900">FFMAFIA.PANEL STORE</div><h2>🛍️ Panel Products</h2></div><button class="mf-admin-btn" onclick="this.closest(\'#mf-product-store\').remove()">✕</button></div><div id="mf-product-list" class="mf-product-grid" style="margin-top:18px">Loading...</div></div>';
   document.body.appendChild(box);
   try{const d=await api("/api/products");const rows=d.products||[];document.getElementById("mf-product-list").innerHTML=rows.length?rows.map(p=>'<div class="mf-product-card">'+(p.imageUrl?'<img src="'+p.imageUrl+'" alt="">':'')+'<h3>'+p.name+'</h3><p>'+(p.description||'Premium panel product.')+'</p><strong>₹'+p.price+'</strong><button class="mf-glow-btn" onclick="orderPanelProduct(\''+p.id+'\')">🛒 Buy / Order</button></div>').join(""):"<p>No products available yet.</p>";}catch(e){document.getElementById("mf-product-list").textContent="❌ "+e.message;}
 }
 async function orderPanelProduct(id){
-  try{const d=await api("/api/products/"+encodeURIComponent(id)+"/order",{method:"POST"});let box=document.getElementById("mf-product-pay");if(box)box.remove();box=document.createElement("div");box.id="mf-product-pay";box.className="mf-glory-order-modal";const upi=d.upiId||"";const link=upi?"upi://pay?pa="+encodeURIComponent(upi)+"&pn="+encodeURIComponent("FFMAFIA.PANEL")+"&am="+encodeURIComponent(d.order.amount)+"&cu=INR&tn="+encodeURIComponent(d.order.id):"";box.innerHTML='<div class="mf-glory-box" style="max-width:520px;text-align:center"><h2>💳 Complete Payment</h2><p>'+(d.product.name)+'</p><div style="font-size:34px;color:#ffd166;font-weight:950">₹'+d.order.amount+'</div>'+(d.qrUrl?'<img src="'+d.qrUrl+'" style="width:230px;background:#fff;padding:10px;border-radius:18px" alt="QR">':'')+(upi?'<div style="color:#22d3ee;font-weight:900;margin:10px">'+upi+'</div><a class="mf-glow-btn" href="'+link+'">📲 Pay with UPI</a>':'')+'<p style="font-size:12px;color:#aaa">Order ID: '+d.order.id+'</p><button class="mf-glow-btn" onclick="confirmProductPayment(\''+d.order.id+'\')">✓ I Have Paid</button><button class="mf-admin-btn" onclick="this.closest(\'#mf-product-pay\').remove()">Close</button></div>';document.body.appendChild(box);}catch(e){alert("❌ "+e.message);}
+  try{const d=await api("/api/products/"+encodeURIComponent(id)+"/order",{method:"POST"});let box=document.getElementById("mf-product-pay");if(box)box.remove();box=document.createElement("div");box.id="mf-product-pay";box.className="mf-product-modal";const upi=d.upiId||"";const link=upi?"upi://pay?pa="+encodeURIComponent(upi)+"&pn="+encodeURIComponent("FFMAFIA.PANEL")+"&am="+encodeURIComponent(d.order.amount)+"&cu=INR&tn="+encodeURIComponent(d.order.id):"";box.innerHTML='<div class="mf-product-box" style="max-width:520px;text-align:center"><h2>💳 Complete Payment</h2><p>'+(d.product.name)+'</p><div style="font-size:34px;color:#ffd166;font-weight:950">₹'+d.order.amount+'</div>'+(d.qrUrl?'<img src="'+d.qrUrl+'" style="width:230px;background:#fff;padding:10px;border-radius:18px" alt="QR">':'')+(upi?'<div style="color:#22d3ee;font-weight:900;margin:10px">'+upi+'</div><a class="mf-glow-btn" href="'+link+'">📲 Pay with UPI</a>':'')+'<p style="font-size:12px;color:#aaa">Order ID: '+d.order.id+'</p><button class="mf-glow-btn" onclick="confirmProductPayment(\''+d.order.id+'\')">✓ I Have Paid</button><button class="mf-admin-btn" onclick="this.closest(\'#mf-product-pay\').remove()">Close</button></div>';document.body.appendChild(box);}catch(e){alert("❌ "+e.message);}
 }
 async function confirmProductPayment(orderId){
   try{
@@ -394,7 +394,7 @@ async function openAdminPanel(){
   const panel=document.createElement("div"); panel.id="mf-admin-panel"; panel.className="mf-admin-panel";
   panel.innerHTML=`
     <div class="mf-admin-shell">
-      <div class="mf-admin-head"><div><h2 style="margin:0">🛡️ MafiaFF Glory Admin</h2><small style="color:#aaa">Private control center</small></div><button class="mf-admin-btn" onclick="document.getElementById('mf-admin-panel').remove()">✕ Close</button></div>
+      <div class="mf-admin-head"><div><h2 style="margin:0">🛡️ FFMAFIA.PANEL Admin</h2><small style="color:#aaa">Private control center</small></div><button class="mf-admin-btn" onclick="document.getElementById('mf-admin-panel').remove()">✕ Close</button></div>
       <div id="mf-admin-tabs" class="mf-admin-tabs">
         <button onclick="loadAdminTab('overview')">📊 Overview</button><button onclick="loadAdminTab('users')">👥 Users</button><button onclick="loadAdminTab('pricing')">💎 Pricing</button><button onclick="loadAdminTab('coupons')">🎟️ Coupons</button><button onclick="loadAdminTab('transactions')">💳 Transactions</button><button onclick="loadAdminTab('products')">🛍️ Products</button><button onclick="loadAdminTab('audit')">📝 Audit</button>
       </div>
