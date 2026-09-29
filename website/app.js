@@ -62,7 +62,7 @@ style.textContent = `
 .mf-admin-table{width:100%;border-collapse:collapse;font-size:13px}
 .mf-admin-table th,.mf-admin-table td{padding:10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
 .mf-admin-table input,.mf-admin-table select{background:#080611;color:#fff;border:1px solid #34264d;border-radius:8px;padding:7px}
-.mf-login-toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:100000;padding:9px 16px;border-radius:999px;background:linear-gradient(90deg,#a855f7,#22d3ee);color:#fff;font-size:12px;font-weight:800;box-shadow:0 8px 25px rgba(0,0,0,.35);animation:mfToastIn .25s ease}
+.mf-glory-card{border-color:rgba(255,209,102,.42)!important;background:linear-gradient(145deg,rgba(255,209,102,.08),rgba(168,85,247,.08))!important}.mf-glory-order-modal{position:fixed;inset:0;z-index:120000;background:rgba(3,2,8,.88);backdrop-filter:blur(12px);display:flex;align-items:center;justify-content:center;padding:16px}.mf-glory-box{width:min(760px,100%);max-height:90vh;overflow:auto;background:linear-gradient(145deg,#151025,#08060d);border:1px solid rgba(168,85,247,.5);border-radius:26px;padding:20px;color:#fff}.mf-glory-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.mf-glory-box input,.mf-glory-box select{width:100%;box-sizing:border-box;padding:13px;border-radius:12px;border:1px solid #34264d;background:#080611;color:#fff}.mf-glory-order{padding:15px;margin:10px 0;border-radius:18px;background:#100b1d;border:1px solid rgba(168,85,247,.3)}.mf-worker-row{display:grid;grid-template-columns:70px 1fr 70px;gap:8px;align-items:center;margin-top:8px}.mf-worker-bar{height:7px;border-radius:99px;background:#241a35;overflow:hidden}.mf-worker-bar span{display:block;height:100%;background:linear-gradient(90deg,#a855f7,#22d3ee)}.mf-status{font-size:11px;font-weight:800;text-transform:uppercase;color:#22d3ee}@media(max-width:600px){.mf-glory-grid{grid-template-columns:1fr}.mf-glory-box{padding:16px}.mf-worker-row{grid-template-columns:58px 1fr 60px}}.mf-login-toast{position:fixed;left:50%;bottom:88px;transform:translateX(-50%);z-index:100000;padding:9px 16px;border-radius:999px;background:linear-gradient(90deg,#a855f7,#22d3ee);color:#fff;font-size:12px;font-weight:800;box-shadow:0 8px 25px rgba(0,0,0,.35);animation:mfToastIn .25s ease}
 @keyframes mfToastIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
 `;
 
@@ -289,6 +289,12 @@ async function showDashboard(){
             <p>Check payment status, orders and credit history.</p>
             <button class="mf-glow-btn" onclick="openDashboardApi('Transactions', '/api/transactions')">View Orders</button>
           </div>
+          <div class="mf-dash-card mf-glory-card">
+            <div class="mf-dash-icon">🏰</div>
+            <h3>Glory Push</h3>
+            <p>Create a Guild Glory order and track all 4 worker slots.</p>
+            <button class="mf-glow-btn" onclick="openGloryManager()">🚀 Create Glory Order</button>
+          </div>
         </div>
 
         <div id="mf-admin-card" class="mf-admin-card mf-dash-admin" style="display:none">
@@ -341,6 +347,57 @@ if(localStorage.getItem("ffglory_token")){
   });
 }
 
+
+async function openGloryManager(){
+  let box=document.getElementById("mf-glory-modal"); if(box)box.remove();
+  box=document.createElement("div"); box.id="mf-glory-modal"; box.className="mf-glory-order-modal";
+  box.innerHTML=`
+    <div class="mf-glory-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div><div style="color:#ffd166;font-size:12px;font-weight:900">MAFIAFF GLORY</div><h2 style="margin:4px 0">🏰 Glory Push</h2><p style="color:#aaa;margin:0">Create and track your Guild Glory order.</p></div>
+        <button class="mf-admin-btn" onclick="this.closest('#mf-glory-modal').remove()">✕</button>
+      </div>
+      <div style="margin-top:18px;padding:15px;border-radius:18px;background:#100b1d;border:1px solid rgba(34,211,238,.25)">
+        <div class="mf-glory-grid">
+          <div><small style="color:#aaa">Guild ID</small><input id="mf-guild-id" placeholder="Enter Guild ID"></div>
+          <div><small style="color:#aaa">Region</small><select id="mf-glory-region"><option value="">Select Region</option><option>India</option><option>Bangladesh</option><option>Pakistan</option><option>Other</option></select></div>
+          <div><small style="color:#aaa">Target Glory</small><input id="mf-target-glory" type="number" min="1" value="100"></div>
+          <div><small style="color:#aaa">Credit Cost</small><input id="mf-credit-cost" type="number" min="1" value="1"></div>
+        </div>
+        <button class="mf-glow-btn" style="width:100%;margin-top:12px" onclick="createGloryOrder()">🚀 Start Glory Order</button>
+        <div id="mf-glory-msg" style="margin-top:10px"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:20px"><h3 style="margin:0">📊 My Orders</h3><button class="mf-admin-btn" onclick="loadGloryOrders()">🔄 Refresh</button></div>
+      <div id="mf-glory-orders" style="margin-top:8px">Loading...</div>
+    </div>`;
+  document.body.appendChild(box); loadGloryOrders();
+}
+async function createGloryOrder(){
+  const msg=document.getElementById("mf-glory-msg");
+  const payload={guild_id:document.getElementById("mf-guild-id").value.trim(),region:document.getElementById("mf-glory-region").value,target_glory:Number(document.getElementById("mf-target-glory").value),credit_cost:Number(document.getElementById("mf-credit-cost").value)};
+  msg.textContent="⏳ Checking credits and creating order...";
+  try{
+    const d=await api("/api/glory-orders",{method:"POST",body:JSON.stringify(payload)});
+    msg.innerHTML="✅ Order created. "+d.balance+" Credits remaining.";
+    await loadGloryOrders(); loadCreditBalance();
+  }catch(e){msg.innerHTML="❌ "+e.message;}
+}
+async function loadGloryOrders(){
+  const list=document.getElementById("mf-glory-orders"); if(!list)return;
+  try{
+    const d=await api("/api/glory-orders"); const rows=d.orders||[];
+    list.innerHTML=rows.length?rows.map(renderGloryOrder).join(""):'<div style="color:#aaa;padding:14px">No Glory orders yet.</div>';
+  }catch(e){list.innerHTML='<div style="color:#ff6b6b">❌ '+e.message+'</div>';}
+}
+function renderGloryOrder(o){
+  const workers=(o.workers||[]).map(w=>'<div class="mf-worker-row"><b>Bot '+w.slot+'</b><div><div class="mf-worker-bar"><span style="width:'+Number(w.progress||0)+'%"></span></div><small class="mf-status">'+String(w.status||"waiting")+'</small></div><small>'+Number(w.progress||0)+'%</small></div>').join("");
+  const cancel=!["completed","cancelled","failed"].includes(o.status)?'<button class="mf-admin-btn" style="margin-top:12px" onclick="cancelGloryOrder(\''+o.id+'\')">🛑 Cancel Order</button>':"";
+  return '<div class="mf-glory-order"><div style="display:flex;justify-content:space-between;gap:10px"><div><b>🏰 Guild '+String(o.guildId)+'</b><br><small style="color:#aaa">'+String(o.region)+' • Target '+Number(o.targetGlory)+' • Cost '+Number(o.creditCost)+' Credits</small></div><span class="mf-status">'+String(o.status)+'</span></div><div style="margin-top:12px"><div style="display:flex;justify-content:space-between"><small>Progress</small><b>'+Number(o.progress||0)+'%</b></div><div class="mf-worker-bar"><span style="width:'+Number(o.progress||0)+'%"></span></div><small style="color:#aaa">Current Glory: '+Number(o.currentGlory||0)+' / '+Number(o.targetGlory||0)+'</small></div><div style="margin-top:10px"><b>🤖 4 Worker Slots</b>'+workers+'</div>'+cancel+'</div>';
+}
+async function cancelGloryOrder(id){
+  if(!confirm("Cancel this Glory order?"))return;
+  try{await api("/api/glory-orders/"+encodeURIComponent(id)+"/cancel",{method:"POST"});await loadGloryOrders();alert("Order cancelled.");}catch(e){alert("❌ "+e.message);}
+}
 
 async function loadCreditBalance(){
   try{
