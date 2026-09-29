@@ -764,16 +764,6 @@ async function openAdminPanel(){
     </div>`;
   document.body.appendChild(panel); loadAdminTab("overview");
 }
-async function saveAdminCoupon(id){
-  const ex=document.getElementById("ce-"+id), lim=document.getElementById("cl-"+id);
-  await api("/admin/coupons/"+encodeURIComponent(id),{method:"PATCH",body:{expires_at:ex?.value?new Date(ex.value).toISOString():null,usage_limit:Math.max(1,Number(lim?.value||1))}});
-  loadAdminTab("coupons");
-}
-async function setAdminCouponStatus(id,status){
-  await api("/admin/coupons/"+encodeURIComponent(id),{method:"PATCH",body:{status}});
-  loadAdminTab("coupons");
-}
-
 async function loadAdminTab(tab){
   const box=document.getElementById("mf-admin-content"); if(!box)return;
   document.querySelectorAll("#mf-admin-tabs button").forEach(b=>b.classList.toggle("active",b.textContent.toLowerCase().includes(tab)));
@@ -792,7 +782,7 @@ async function loadAdminTab(tab){
       box.innerHTML=`<div style="display:grid;gap:12px">${d.plans.map((p,i)=>`<div class="mf-admin-stat"><input id="apn${i}" value="${p.name}"> <input id="app${i}" type="number" value="${p.price}"> <input id="apc${i}" type="number" value="${p.credits}"> <input id="api${i}" value="${p.id}" disabled></div>`).join("")}<button class="mf-admin-btn" onclick="saveAdminPricing()">💾 Save Pricing</button></div>`;
       panelPricingCache=d.plans;
     }else if(tab==="coupons"){
-      const d=await api("/admin/coupons"); box.innerHTML=`<div style="overflow:auto"><table class="mf-admin-table"><tr><th>Code</th><th>User</th><th>Status</th><th>Expiry</th><th>Usage</th><th>Action</th></tr>${d.coupons.map(c=>`<tr><td><b>${c.code}</b></td><td>${c.userId}</td><td>${c.status}</td><td><input id="ce-${c.id}" type="datetime-local" value="${c.expiresAt?new Date(c.expiresAt).toISOString().slice(0,16):""}" style="min-width:180px"></td><td><input id="cl-${c.id}" type="number" min="1" value="${Number(c.usageLimit||1)}" style="width:80px"> / ${Number(c.usageCount||0)}</td><td><button class="mf-admin-btn" onclick="saveAdminCoupon('${c.id}')">💾 Save</button> <button class="mf-admin-btn" onclick="setAdminCouponStatus('${c.id}','cancelled')">❌ Cancel</button></td></tr>`).join("")}</table></div>`;
+      const d=await api("/admin/coupons"); box.innerHTML=`<div style="overflow:auto"><table class="mf-admin-table"><tr><th>Code</th><th>User</th><th>Status</th></tr>${d.coupons.map(c=>`<tr><td>${c.code}</td><td>${c.userId}</td><td>${c.status}</td></tr>`).join("")}</table></div>`;
     }else if(tab==="transactions"){
       const d=await api("/admin/transactions");
       box.innerHTML=`<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="mf-admin-btn" onclick="loadAdminTab('transactions')">🔄 Refresh Transactions</button></div><div style="overflow:auto"><table class="mf-admin-table"><tr><th>Plan</th><th>Amount</th><th>Credits</th><th>User</th><th>Status</th><th>Action</th></tr>${d.transactions.map(t=>`<tr><td>${t.planName}</td><td>₹${t.amount}</td><td>🎟️ ${Number(t.credits||0)}</td><td>${t.userId}</td><td><b>${t.status}</b></td><td>${t.status==="payment_pending"?`<button class="mf-admin-btn" onclick="adminVerifyPayment('${t.id}')">✅ Verify Payment</button> <button class="mf-admin-btn" onclick="adminRejectPayment('${t.id}')">❌ Reject</button>`:(t.status==="completed"?`<button class="mf-admin-btn" onclick="adminRefundCredits('${t.id}',${Number(t.credits||0)})">💰 Refund Credits</button>`:(t.status==="refunded"?"↩️ Refunded":"—"))}</td></tr>`).join("")}</table></div>`;
