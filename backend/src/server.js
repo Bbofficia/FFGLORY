@@ -230,6 +230,20 @@ app.get('/api/transactions',(req,res)=>{
   res.json({transactions:rows.filter(x=>String(x.userId)===String(userKey(req)))});
 });
 
+app.post('/api/transactions/refund-request',(req,res)=>{
+  const rows=readJson("transactions.json",[]);
+  const id=String(req.body?.transaction_id||"");
+  const row=rows.find(x=>String(x.id)===id&&String(x.userId)===String(userKey(req)));
+  if(!row)return res.status(404).json({error:"Transaction not found"});
+  if(row.status==="refunded")return res.status(400).json({error:"Credits already refunded"});
+  if(row.status!=="completed")return res.status(400).json({error:"Only completed transactions can request a refund"});
+  row.status="refund_requested";
+  row.refundRequestedAt=new Date().toISOString();
+  writeJson("transactions.json",rows);
+  audit(req,"transaction.refund_request",row.id);
+  res.json({ok:true,transaction:row});
+});
+
 app.post('/api/transactions/cancel',(req,res)=>{
   const rows=readJson("transactions.json",[]);
   const id=String(req.body?.transaction_id||"");
