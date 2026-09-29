@@ -473,10 +473,23 @@ app.get('/api/notifications',(req,res)=>{
 
 
 
-function calculateCreditBalance(userId){
+async function getPersistentTransactions(userId){
+  if(!supabaseUrl||!supabaseServiceKey) return null;
+  const rows=await supabaseRequest('GET','transactions?user_id=eq.'+encodeURIComponent(userId)+'&select=id,user_id,plan_id,plan_name,amount,credits,status,type,order_id,created_at&order=created_at.desc');
+  return Array.isArray(rows)?rows.map(x=>({id:x.id,userId:x.user_id,planId:x.plan_id||'',planName:x.plan_name||'',amount:Number(x.amount||0),credits:Number(x.credits||0),status:x.status||'pending',type:x.type||'payment',orderId:x.order_id||undefined,createdAt:x.created_at})):null;
+}
+async function savePersistentTransaction(row){
+  if(!supabaseUrl||!supabaseServiceKey) return false;
+  const rows=await supabaseRequest('POST','transactions',[{id:row.id,user_id:row.userId,plan_id:row.planId||'',plan_name:row.planName||'',amount:Number(row.amount||0),credits:Number(row.credits||0),status:row.status||'pending',type:row.type||'payment',order_id:row.orderId||null,created_at:row.createdAt||new Date().toISOString()}]);
+  return Array.isArray(rows)&&rows.length>0;
+}
+async function calculateCreditBalance(userId){
+  try{
+    const rows=await getPersistentTransactions(userId);
+    if(Array.isArray(rows)) return rows.filter(x=>x.status==="completed").reduce((sum,x)=>sum+Number(x.credits||0),0);
+  }catch(e){}
   const rows=readJson("transactions.json",[]);
-  return rows.filter(x=>String(x.userId)===String(userId)&&x.status==="completed")
-    .reduce((sum,x)=>sum+Number(x.credits||0),0);
+  return rows.filter(x=>String(x.userId)===String(userId)&&x.status==="completed").reduce((sum,x)=>sum+Number(x.credits||0),0);
 }
 
 app.get('/api/glory-orders',async(req,res)=>{
