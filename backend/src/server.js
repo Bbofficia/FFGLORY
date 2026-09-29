@@ -276,7 +276,7 @@ app.get('/api/credit-history',(req,res)=>{
   const completed=transactions.filter(x=>x.status==="completed");
   const refunded=transactions.filter(x=>x.status==="refunded");
   const balance=completed.reduce((sum,x)=>sum+Number(x.credits||0),0)-refunded.reduce((sum,x)=>sum+Number(x.credits||0),0);
-  const purchased=completed.reduce((sum,x)=>sum+Number(x.credits||0),0);
+  const purchased=completed.filter(x=>Number(x.credits||0)>0).reduce((sum,x)=>sum+Number(x.credits||0),0);
   res.json({balance:Math.max(0,balance),purchased,history:transactions.slice().reverse().map(x=>({id:x.id,planName:x.planName,credits:Number(x.credits||0),status:x.status,createdAt:x.createdAt}))});
 });
 
@@ -418,6 +418,85 @@ app.get('/api/activity',(req,res)=>{
 app.get('/api/notifications',(req,res)=>{
   const rows=readJson("notifications.json",[]);
   res.json({notifications:rows.filter(x=>String(x.userId)===String(userKey(req)))});
+});
+
+
+
+function calculateCreditBalance(userId){
+  const rows=readJson("transactions.json",[]);
+  return rows.filter(x=>String(x.userId)===String(userId)&&x.status==="completed")
+    .reduce((sum,x)=>sum+Number(x.credits||0),0);
+}
+
+app.get('/api/glory-orders',(req,res)=>{
+  const rows=readJson("glory-orders.json",[]);
+  res.json({orders:rows.filter(x=>String(x.userId)===String(userKey(req))).reverse()});
+});
+
+app.post('/api/glory-orders',(req,res)=>{
+  const rows=readJson("glory-orders.json",[]);
+  const transactions=readJson("transactions.json",[]);
+  const userId=userKey(req);
+  const guildId=String(req.body?.guild_id||"").trim();
+  const region=String(req.body?.region||"").trim();
+  const targetGlory=Math.max(1,Math.floor(Number(req.body?.target_glory||0)));
+  const creditCost=Math.max(1,Math.floor(Number(req.body?.credit_cost||0)));
+  if(guildId.length<3) return res.status(400).json({error:"Valid Guild ID is required"});
+  if(!region) return res.status(400).json({error:"Region is required"});
+  if(!Number.isFinite(targetGlory)||targetGlory<1) return res.status(400).json({error:"Target glory must be greater than 0"});
+  if(!Number.isFinite(creditCost)||creditCost<1) return res.status(400).json({error:"Credit cost must be at least 1"});
+  const active=rows.find(x=>String(x.userId)===String(userId)&&x.guildId===guildId&&!["completed","cancelled","failed"].includes(x.status));
+  if(active) return res.status(409).json({error:"An active order already exists for this Guild ID"});
+  const balance=calculateCreditBalance(userId);
+  if(balance<creditCost) return res.status(400).json({error:"Insufficient credits"});
+  const id=crypto.randomUUID();
+  const now=new Date().toISOString();
+  const order={
+    id,userId,guildId,region,targetGlory,creditCost,currentGlory:0,progress:0,status:"queued",
+    createdAt:now,updatedAt:now,
+    workers:[1,2,3,4].map(n=>({slot:n,status:"waiting",progress:0}))
+  };
+  rows.push(order);
+  transactions.push({id:crypto.randomUUID(),userId,planId:"glory-debit",planName:"Glory Order "+id.slice(0,8),amount:0,credits:-creditCost,status:"completed",type:"glory_debit",orderId:id,createdAt:now});
+  writeJson("glory-orders.json",rows); writeJson("transactions.json",transactions);
+  audit(req,"glory.order.create",id);
+  res.status(201).json({ok:true,order,balance:balance-creditCost});
+});
+
+app.post('/api/glory-orders/:id/cancel',(req,res)=>{
+  const rows=readJson("glory-orders.json",[]);
+  const row=rows.find(x=>x.id===String(req.params.id)&&String(x.userId)===String(userKey(req)));
+  if(!row)return res.status(404).json({error:"Order not found"});
+  if(["completed","cancelled","failed"].includes(row.status))return res.status(400).json({error:"Order cannot be cancelled"});
+  row.status="cancelled"; row.updatedAt=new Date().toISOString();
+  row.workers=(row.workers||[]).map(w=>({...w,status:"cancelled"}));
+  writeJson("glory-orders.json",rows); audit(req,"glory.order.cancel",row.id);
+  res.json({ok:true,order:row});
+});
+
+app.get('/admin/glory-orders',appAuth,adminOnly,(req,res)=>{
+  const rows=readJson("glory-orders.json",[]);
+  res.json({orders:rows.slice().reverse()});
+});
+
+app.patch('/admin/glory-orders/:id',(req,res)=>{
+  if(req.user?.role!=="admin") return res.status(403).json({error:"Admin access required"});
+  const rows=readJson("glory-orders.json",[]);
+  const row=rows.find(x=>x.id===String(req.params.id));
+  if(!row)return res.status(404).json({error:"Order not found"});
+  const allowed=["queued","running","completed","failed","paused"];
+  if(typeof req.body?.status==="string" && allowed.includes(req.body.status)) row.status=req.body.status;
+  if(req.body?.current_glory!==undefined){
+    const n=Math.max(0,Math.floor(Number(req.body.current_glory)));
+    row.currentGlory=Math.min(n,row.targetGlory);
+    row.progress=Math.min(100,Math.round(row.currentGlory/row.targetGlory*100));
+  }
+  if(Array.isArray(req.body?.workers)){
+    row.workers=req.body.workers.slice(0,4).map((w,i)=>({slot:i+1,status:String(w.status||"waiting"),progress:Math.max(0,Math.min(100,Number(w.progress||0)))}));
+  }
+  row.updatedAt=new Date().toISOString();
+  writeJson("glory-orders.json",rows); audit(req,"admin.glory.order.update",row.id);
+  res.json({ok:true,order:row});
 });
 
 
