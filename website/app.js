@@ -508,8 +508,13 @@ async function openDashboardApi(title, path){
     }
 
     document.getElementById("mf-api-title").textContent = title;
-    document.getElementById("mf-api-data").textContent =
-      JSON.stringify(data,null,2);
+    const dataBox=document.getElementById("mf-api-data");
+    if(path === "/api/transactions"){
+      const rows=data.transactions||[];
+      dataBox.innerHTML=rows.length?rows.map(t=>`<div style="padding:14px;margin:10px 0;border:1px solid rgba(168,85,247,.35);border-radius:16px;background:#171025"><b>${t.planName}</b><br>💰 ₹${t.amount} &nbsp; 🎟️ ${Number(t.credits||0)} Credits<br><small>${t.status}</small> ${t.status==="completed"?`<button class="mf-admin-btn" style="margin-left:8px" onclick="customerRefundRequest('${t.id}',${Number(t.credits||0)})">💰 Request Credit Refund</button>`:""}</div>`).join(""):"No transactions yet.";
+    }else{
+      dataBox.textContent=JSON.stringify(data,null,2);
+    }
 
   }catch(e){
     alert(title + " error: " + e.message);
@@ -583,3 +588,5 @@ async function adminDelete(path,tab){if(!confirm("Delete this item?"))return;awa
 async function adminTransactionStatus(id,status){try{await api("/admin/transactions/"+id,{method:"PATCH",body:JSON.stringify({status})});await loadAdminTab("transactions");alert(status==="cancelled"?"↩️ Transaction cancelled":"✅ Transaction completed");}catch(e){alert("❌ Transaction update failed: "+e.message);}}
 
 async function adminRefundCredits(id,credits){if(!confirm("Refund "+credits+" credits to this user? This can only be done once."))return;try{const d=await api("/admin/transactions/"+id+"/refund",{method:"PATCH"});await loadAdminTab("transactions");alert("✅ "+(d.refundedCredits||credits)+" credits refunded to the user");}catch(e){alert("❌ Credit refund failed: "+e.message);}}
+
+async function customerRefundRequest(id,credits){if(!confirm("Request refund of "+credits+" credits?"))return;try{await api("/api/transactions/refund-request",{method:"POST",body:JSON.stringify({transaction_id:id})});alert("✅ Refund request sent to Admin");openDashboardApi("Transactions","/api/transactions");}catch(e){alert("❌ Refund request failed: "+e.message);}}
