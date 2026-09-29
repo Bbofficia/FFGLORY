@@ -553,7 +553,8 @@ async function loadAdminTab(tab){
     }else if(tab==="coupons"){
       const d=await api("/admin/coupons"); box.innerHTML=`<div style="overflow:auto"><table class="mf-admin-table"><tr><th>Code</th><th>User</th><th>Status</th></tr>${d.coupons.map(c=>`<tr><td>${c.code}</td><td>${c.userId}</td><td>${c.status}</td></tr>`).join("")}</table></div>`;
     }else if(tab==="transactions"){
-      const d=await api("/admin/transactions"); box.innerHTML=`<div style="overflow:auto"><table class="mf-admin-table"><tr><th>Plan</th><th>Amount</th><th>User</th><th>Status</th></tr>${d.transactions.map(t=>`<tr><td>${t.planName}</td><td>₹${t.amount}</td><td>${t.userId}</td><td>${t.status}</td></tr>`).join("")}</table></div>`;
+      const d=await api("/admin/transactions");
+      box.innerHTML=`<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="mf-admin-btn" onclick="loadAdminTab('transactions')">🔄 Refresh Transactions</button></div><div style="overflow:auto"><table class="mf-admin-table"><tr><th>Plan</th><th>Amount</th><th>User</th><th>Status</th><th>Action</th></tr>${d.transactions.map(t=>`<tr><td>${t.planName}</td><td>₹${t.amount}</td><td>${t.userId}</td><td><b>${t.status}</b></td><td>${t.status==="completed"?`<button class="mf-admin-btn" onclick="adminTransactionStatus('${t.id}','cancelled')">↩️ Cancel</button>`:`<button class="mf-admin-btn" onclick="adminTransactionStatus('${t.id}','completed')">✅ Complete</button>`}</td></tr>`).join("")}</table></div>`;
     }else if(tab==="audit"){
       const d=await api("/admin/audit?limit=200"); box.innerHTML=`<pre style="white-space:pre-wrap;background:#100b1d;padding:14px;border-radius:14px;max-height:65vh;overflow:auto">${JSON.stringify(d.events||[],null,2)}</pre>`;
     }
@@ -578,3 +579,5 @@ async function saveAdminPricing(){
 async function adminUserRole(id,role){await api("/admin/users/"+id,{method:"PATCH",body:JSON.stringify({role})});}
 async function adminUserToggle(id,active){await api("/admin/users/"+id,{method:"PATCH",body:JSON.stringify({active})});loadAdminTab("users");}
 async function adminDelete(path,tab){if(!confirm("Delete this item?"))return;await api(path,{method:"DELETE"});loadAdminTab(tab);}
+
+async function adminTransactionStatus(id,status){try{await api("/admin/transactions/"+id,{method:"PATCH",body:JSON.stringify({status})});await loadAdminTab("transactions");alert(status==="cancelled"?"↩️ Transaction cancelled":"✅ Transaction completed");}catch(e){alert("❌ Transaction update failed: "+e.message);}}
