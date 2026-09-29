@@ -268,13 +268,6 @@ async function showDashboard(){
   }
 
   dash.style.display="block";
-  loadInlineGroups();
-  loadCreditBalance();
-
-  const groupsBtn = document.querySelector(".mf-groups-open");
-  if(groupsBtn){
-    groupsBtn.addEventListener("click", openGroupsManager);
-  }
 
   try{
     const data = await api("/auth/me");
@@ -374,7 +367,7 @@ async function openAdminPanel(){
     <div class="mf-admin-shell">
       <div class="mf-admin-head"><div><h2 style="margin:0">🛡️ FFMAFIA.PANEL Admin</h2><small style="color:#aaa">Private control center</small></div><button class="mf-admin-btn" onclick="document.getElementById('mf-admin-panel').remove()">✕ Close</button></div>
       <div id="mf-admin-tabs" class="mf-admin-tabs">
-        <button onclick="loadAdminTab('overview')">📊 Overview</button><button onclick="loadAdminTab('users')">👥 Users</button><button onclick="loadAdminTab('pricing')">💎 Pricing</button><button onclick="loadAdminTab('coupons')">🎟️ Coupons</button><button onclick="loadAdminTab('transactions')">💳 Transactions</button><button onclick="loadAdminTab('products')">🛍️ Products</button><button onclick="loadAdminTab('audit')">📝 Audit</button>
+        <button onclick="loadAdminTab('overview')">📊 Overview</button><button onclick="loadAdminTab('users')">👥 Users</button><button onclick="loadAdminTab('coupons')">🎟️ Coupons</button><button onclick="loadAdminTab('transactions')">💳 Transactions</button><button onclick="loadAdminTab('products')">🛍️ Products</button><button onclick="loadAdminTab('audit')">📝 Audit</button>
       </div>
       <div id="mf-admin-content" style="margin-top:12px">Loading...</div>
     </div>`;
