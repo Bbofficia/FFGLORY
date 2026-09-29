@@ -564,7 +564,7 @@ app.get('/admin/coupons',appAuth,adminOnly,async(req,res)=>{
   try{ const rows=await getPersistentCoupons(""); if(Array.isArray(rows)) return res.json({coupons:rows}); }catch(e){}
   res.json({coupons:readJson("coupons.json",[])});
 });
-app.patch('/admin/coupons/:id',appAuth,adminOnly,(req,res)=>{
+app.patch('/admin/coupons/:id',appAuth,adminOnly,async(req,res)=>{
   const rows=readJson("coupons.json",[]);
   const row=rows.find(x=>String(x.id)===String(req.params.id));
   if(!row)return res.status(404).json({error:"Coupon not found"});
