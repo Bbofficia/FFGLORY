@@ -698,7 +698,7 @@ async function openAdminPanel(){
     <div class="mf-admin-shell">
       <div class="mf-admin-head"><div><h2 style="margin:0">🛡️ MafiaFF Glory Admin</h2><small style="color:#aaa">Private control center</small></div><button class="mf-admin-btn" onclick="document.getElementById('mf-admin-panel').remove()">✕ Close</button></div>
       <div id="mf-admin-tabs" class="mf-admin-tabs">
-        <button onclick="loadAdminTab('overview')">📊 Overview</button><button onclick="loadAdminTab('users')">👥 Users</button><button onclick="loadAdminTab('groups')">🎮 Groups</button><button onclick="loadAdminTab('pricing')">💎 Pricing</button><button onclick="loadAdminTab('coupons')">🎟️ Coupons</button><button onclick="loadAdminTab('transactions')">💳 Transactions</button><button onclick="loadAdminTab('audit')">📝 Audit</button>
+        <button onclick="loadAdminTab('overview')">📊 Overview</button><button onclick="loadAdminTab('users')">👥 Users</button><button onclick="loadAdminTab('groups')">🎮 Groups</button><button onclick="loadAdminTab('pricing')">💎 Pricing</button><button onclick="loadAdminTab('coupons')">🎟️ Coupons</button><button onclick="loadAdminTab('transactions')">💳 Transactions</button><button onclick="loadAdminTab('glory-orders')">🏰 Glory Orders</button><button onclick="loadAdminTab('audit')">📝 Audit</button>
       </div>
       <div id="mf-admin-content" style="margin-top:12px">Loading...</div>
     </div>`;
@@ -726,11 +726,27 @@ async function loadAdminTab(tab){
     }else if(tab==="transactions"){
       const d=await api("/admin/transactions");
       box.innerHTML=`<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="mf-admin-btn" onclick="loadAdminTab('transactions')">🔄 Refresh Transactions</button></div><div style="overflow:auto"><table class="mf-admin-table"><tr><th>Plan</th><th>Amount</th><th>Credits</th><th>User</th><th>Status</th><th>Action</th></tr>${d.transactions.map(t=>`<tr><td>${t.planName}</td><td>₹${t.amount}</td><td>🎟️ ${Number(t.credits||0)}</td><td>${t.userId}</td><td><b>${t.status}</b></td><td>${t.status==="payment_pending"?`<button class="mf-admin-btn" onclick="adminVerifyPayment('${t.id}')">✅ Verify Payment</button> <button class="mf-admin-btn" onclick="adminRejectPayment('${t.id}')">❌ Reject</button>`:(t.status==="completed"?`<button class="mf-admin-btn" onclick="adminRefundCredits('${t.id}',${Number(t.credits||0)})">💰 Refund Credits</button>`:(t.status==="refunded"?"↩️ Refunded":"—"))}</td></tr>`).join("")}</table></div>`;
+    }else if(tab==="glory-orders"){
+      const d=await api("/admin/glory-orders");
+      const rows=d.orders||[];
+      box.innerHTML=rows.length?'<div style="overflow:auto"><table class="mf-admin-table"><tr><th>Guild</th><th>User</th><th>Progress</th><th>Status</th><th>Workers</th><th>Actions</th></tr>'+rows.map(o=>'<tr><td><b>'+String(o.guildId)+'</b><br><small>'+String(o.region)+'</small></td><td>'+String(o.userId)+'</td><td>'+Number(o.currentGlory||0)+' / '+Number(o.targetGlory||0)+'<br>'+Number(o.progress||0)+'%</td><td><b>'+String(o.status)+'</b></td><td>'+((o.workers||[]).map(w=>'B'+w.slot+': '+w.status).join('<br>'))+'</td><td><button class="mf-admin-btn" onclick="adminGloryUpdate(\''+o.id+'\',\'running\')">▶️ Run</button> <button class="mf-admin-btn" onclick="adminGloryUpdate(\''+o.id+'\',\'paused\')">⏸️ Pause</button> <button class="mf-admin-btn" onclick="adminGloryProgress(\''+o.id+'\', '+Number(o.targetGlory||0)+')">📈 Progress</button> <button class="mf-admin-btn" onclick="adminGloryUpdate(\''+o.id+'\',\'completed\')">✅ Complete</button></td></tr>').join('')+'</table></div>':'<div style="color:#aaa;padding:20px">No Glory orders yet.</div>';
     }else if(tab==="audit"){
       const d=await api("/admin/audit?limit=200"); box.innerHTML=`<pre style="white-space:pre-wrap;background:#100b1d;padding:14px;border-radius:14px;max-height:65vh;overflow:auto">${JSON.stringify(d.events||[],null,2)}</pre>`;
     }
   }catch(e){box.innerHTML=`<div style="color:#ff6b6b">❌ ${e.message}</div>`;}
 }
+async function adminGloryUpdate(id,status){
+  try{await api("/admin/glory-orders/"+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify({status})});await loadAdminTab("glory-orders");}
+  catch(e){alert("❌ "+e.message);}
+}
+async function adminGloryProgress(id,target){
+  const value=prompt("Current Glory (0-"+target+"):");
+  if(value===null)return;
+  const current=Math.max(0,Math.min(Number(target),Number(value)));
+  try{await api("/admin/glory-orders/"+encodeURIComponent(id),{method:"PATCH",body:JSON.stringify({current_glory:current})});await loadAdminTab("glory-orders");}
+  catch(e){alert("❌ "+e.message);}
+}
+
 async function saveAdminPricing(){
   try{
     const plans=panelPricingCache.map((p,i)=>({
