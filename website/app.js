@@ -260,8 +260,8 @@ async function showDashboard(){
 
           <div class="card">
             <h3>🎟️ Coupons</h3>
-            <p>Redeem your coupons.</p>
-            <button class="btn" onclick="openDashboardApi('Coupons', '/api/coupons')">Open</button>
+            <p>Redeem your coupon code and check your redeemed coupons.</p>
+            <button class="btn" onclick="openCouponManager()">🎟️ Open Coupons</button>
           </div>
 
           <div class="card">
@@ -478,6 +478,37 @@ async function buyPricingPlan(planId){
       msg.style.color="#ff6b6b";
     }
   }
+}
+
+async function openCouponManager(){
+  let box=document.getElementById("mf-coupon-panel"); if(box)box.remove();
+  box=document.createElement("div"); box.id="mf-coupon-panel";
+  box.style.cssText="position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,.84);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:18px";
+  box.innerHTML='<div style="width:min(560px,100%);max-height:85vh;overflow:auto;background:#100b1d;border:1px solid rgba(168,85,247,.5);border-radius:24px;padding:22px;color:white">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">🎟️ Coupon Center</h2><button class="mf-admin-btn" onclick="document.getElementById(\'mf-coupon-panel\').remove()">✕</button></div>'+
+    '<p style="color:#aaa">Enter your coupon code below.</p>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><input id="mf-coupon-code" placeholder="Enter coupon code" style="flex:1;min-width:220px;padding:13px;border-radius:12px;border:1px solid #a855f7;background:#080611;color:white;text-transform:uppercase"><button class="mf-admin-btn" onclick="redeemCustomerCoupon()">🎁 Redeem</button></div>'+
+    '<p id="mf-coupon-msg"></p><h3>📋 My Redeemed Coupons</h3><div id="mf-coupon-list">Loading...</div>'+
+    '</div>';
+  document.body.appendChild(box);
+  loadCustomerCoupons();
+}
+async function loadCustomerCoupons(){
+  const list=document.getElementById("mf-coupon-list"); if(!list)return;
+  try{
+    const d=await api("/api/coupons/redeemed"); const rows=d.coupons||[];
+    list.innerHTML=rows.length?rows.map(c=>'<div style="padding:12px;margin:8px 0;border-radius:14px;background:#171025;border:1px solid rgba(168,85,247,.3)"><b>🎟️ '+c.code+'</b><br><small>Status: '+c.status+'</small></div>').join(""):'<div style="color:#aaa">No redeemed coupons yet.</div>';
+  }catch(e){list.innerHTML='<div style="color:#ff6b6b">❌ '+e.message+'</div>';}
+}
+async function redeemCustomerCoupon(){
+  const input=document.getElementById("mf-coupon-code"), msg=document.getElementById("mf-coupon-msg"); if(!input||!msg)return;
+  const code=input.value.trim().toUpperCase(); if(!code){msg.textContent="⚠️ Enter a coupon code";return;}
+  msg.textContent="⏳ Redeeming...";
+  try{
+    const d=await api("/api/coupons/redeem",{method:"POST",body:JSON.stringify({code})});
+    msg.textContent="✅ Coupon redeemed successfully!";
+    input.value=""; loadCustomerCoupons();
+  }catch(e){msg.textContent="❌ "+e.message;}
 }
 
 async function openDashboardApi(title, path){
