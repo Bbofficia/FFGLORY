@@ -709,7 +709,12 @@ app.patch('/admin/coupons/:id',appAuth,adminOnly,(req,res)=>{
   const row=rows.find(x=>String(x.id)===String(req.params.id));
   if(!row)return res.status(404).json({error:"Coupon not found"});
   if(typeof req.body?.status==="string") row.status=req.body.status.trim().slice(0,30);
-  writeJson("coupons.json",rows); audit(req,"admin.coupon.update",row.id);
+  if(req.body?.expires_at!==undefined) row.expiresAt=req.body.expires_at||null;
+  if(req.body?.usage_limit!==undefined) row.usageLimit=Math.max(1,Number(req.body.usage_limit||1));
+  if(req.body?.usage_count!==undefined) row.usageCount=Math.max(0,Number(req.body.usage_count||0));
+  writeJson("coupons.json",rows);
+  try{ await updatePersistentCoupon(row); }catch(e){}
+  audit(req,"admin.coupon.update",row.id);
   res.json({ok:true,coupon:row});
 });
 app.get('/admin/transactions',appAuth,adminOnly,async(req,res)=>{
