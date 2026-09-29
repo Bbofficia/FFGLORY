@@ -335,28 +335,6 @@ async function openCreditHistory(){
   }catch(e){ alert("Credit history error: "+e.message); }
 }
 
-async function loadInlineGroups(){
-  const list=document.getElementById("mf-groups-inline-list");
-  if(!list)return;
-  try{
-    const data=await api("/api/groups");
-    const groups=data.groups||[];
-    if(!groups.length){
-      list.innerHTML='<div style="color:#aaa">No saved Guilds yet.</div>';
-      return;
-    }
-    list.innerHTML=groups.map(g=>`
-      <div style="padding:14px;margin:8px 0;background:#100b1d;border:1px solid rgba(168,85,247,.35);border-radius:14px">
-        <strong>🏰 ${g.name||"Unnamed Guild"}</strong>
-        <div style="color:#22d3ee;margin-top:5px">🆔 Guild ID: ${g.clan_id||"Not set"}</div>
-        <div style="color:#aaa;margin-top:4px">🌍 Region: ${g.region||"Not set"}</div>
-      </div>
-    `).join("");
-  }catch(e){
-    list.innerHTML='<div style="color:#ff6b6b">❌ '+e.message+'</div>';
-  }
-}
-
 async function openProductStore(){
   let box=document.getElementById("mf-product-store"); if(box)box.remove();
   box=document.createElement("div"); box.id="mf-product-store"; box.className="mf-product-modal";
