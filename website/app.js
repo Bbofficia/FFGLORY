@@ -226,8 +226,8 @@ async function showDashboard(){
     dash.innerHTML = `
       <div class="mf-dash-wrap">
         <div class="mf-dash-hero">
-          <div class="mf-dash-kicker">MAFIAFF GLORY</div>
-          <h2>Welcome to your<br><span>Glory Dashboard</span></h2>
+          <div class="mf-dash-kicker">FFMAFIA.PANEL</div>
+          <h2>Welcome to your<br><span>Panel Dashboard</span></h2>
           <p id="mf-user">Loading account...</p>
         </div>
 
@@ -246,57 +246,12 @@ async function showDashboard(){
         </div>
 
         <div class="mf-dash-grid">
-          <div class="mf-dash-card mf-card-groups">
-            <div class="mf-dash-icon">👥</div>
-            <h3>My Guilds</h3>
-            <p>Save your Guild ID once and use it for Glory Push.</p>
-            <button class="mf-glow-btn" onclick="document.getElementById('mf-groups-inline').style.display='block'">Open My Guilds</button>
-            <div id="mf-groups-inline" class="mf-inline-panel" style="display:none">
-              <div class="mf-inline-head">
-                <h3>🏰 My Guilds</h3>
-                <button type="button" onclick="document.getElementById('mf-groups-inline').style.display='none'" class="mf-close-circle">✕</button>
-              </div>
-              <div id="mf-groups-inline-list" style="margin:12px 0">Loading...</div>
-              <input id="mf-inline-name" placeholder="Guild name">
-              <input id="mf-inline-guild-id" placeholder="Guild ID">
-              <select id="mf-inline-region">
-                <option value="">Select Region</option>
-                <option value="India">🇮🇳 India</option>
-                <option value="Bangladesh">🇧🇩 Bangladesh</option>
-                <option value="Pakistan">🇵🇰 Pakistan</option>
-                <option value="Other">🌍 Other</option>
-              </select>
-              <button class="mf-glow-btn" onclick="createInlineGroup()">Save Guild</button>
-              <p id="mf-inline-msg"></p>
-            </div>
-          </div>
-
-          <div class="mf-dash-card mf-card-pricing">
-            <div class="mf-dash-icon">💎</div>
-            <h3>Pricing</h3>
-            <p>Choose a plan and add credits to your account.</p>
-            <button class="mf-glow-btn" onclick="openPricingManager()">View Pricing</button>
-          </div>
-
-          <div class="mf-dash-card mf-card-coupons">
-            <div class="mf-dash-icon">🎟️</div>
-            <h3>Coupons</h3>
-            <p>Redeem coupon codes and view your rewards.</p>
-            <button class="mf-glow-btn" onclick="openCouponManager()">Redeem Coupon</button>
-          </div>
-
-          <div class="mf-dash-card mf-card-transactions">
-            <div class="mf-dash-icon">💳</div>
-            <h3>Transactions</h3>
-            <p>Check payment status, orders and credit history.</p>
-            <button class="mf-glow-btn" onclick="openDashboardApi('Transactions', '/api/transactions')">View Orders</button>
-          </div>
-          <div class="mf-dash-card mf-glory-card">
-            <div class="mf-dash-icon">🏰</div>
-            <h3>Glory Push</h3>
-            <p>Create a Guild Glory order and track your bot workers.</p>
-            <button class="mf-glow-btn" onclick="openGloryManager()">🚀 Create Glory Order</button>
-          </div>
+          <div class="mf-dash-card"><div class="mf-dash-icon">🛍️</div><h3>Panel Store</h3><p>Browse products and place orders.</p><button class="mf-glow-btn" onclick="openProductStore()">🛒 Browse Products</button></div>
+          <div class="mf-dash-card mf-card-pricing"><div class="mf-dash-icon">💳</div><h3>Payment</h3><p>Buy credits and complete payments.</p><button class="mf-glow-btn" onclick="openPricingManager()">💎 Payment Options</button></div>
+          <div class="mf-dash-card mf-card-coupons"><div class="mf-dash-icon">🎟️</div><h3>Coupons</h3><p>Redeem your coupon codes.</p><button class="mf-glow-btn" onclick="openCouponManager()">🎁 Redeem Coupon</button></div>
+          <div class="mf-dash-card mf-card-transactions"><div class="mf-dash-icon">📦</div><h3>My Orders</h3><p>Track payments and purchase history.</p><button class="mf-glow-btn" onclick="openDashboardApi('My Orders','/api/transactions')">📋 View Orders</button></div>
+          <div class="mf-dash-card"><div class="mf-dash-icon">💬</div><h3>Support</h3><p>Contact FFMAFIA.PANEL support.</p><button class="mf-glow-btn" onclick="window.open('https://t.me/TeamPro78','_blank')">💬 Support</button></div>
+          <div class="mf-dash-card"><div class="mf-dash-icon">📢</div><h3>Telegram</h3><p>Join our official channel for updates.</p><button class="mf-glow-btn" onclick="window.open('https://t.me/mafiaffglory','_blank')">📢 Join Channel</button></div>
         </div>
 
         <div id="mf-admin-card" class="mf-admin-card mf-dash-admin" style="display:none">
@@ -726,6 +681,20 @@ async function customerRefundRequest(id,credits){
 
 let panelPricingCache=[];
 
+async function openProductStore(){
+  let box=document.getElementById("mf-product-store"); if(box)box.remove();
+  box=document.createElement("div"); box.id="mf-product-store"; box.className="mf-glory-order-modal";
+  box.innerHTML='<div class="mf-glory-box"><div style="display:flex;justify-content:space-between;align-items:center"><div><div style="color:#22d3ee;font-weight:900">FFMAFIA.PANEL STORE</div><h2>🛍️ Panel Products</h2></div><button class="mf-admin-btn" onclick="this.closest(\'#mf-product-store\').remove()">✕</button></div><div id="mf-product-list" class="mf-product-grid" style="margin-top:18px">Loading...</div></div>';
+  document.body.appendChild(box);
+  try{const d=await api("/api/products");const rows=d.products||[];document.getElementById("mf-product-list").innerHTML=rows.length?rows.map(p=>'<div class="mf-product-card">'+(p.imageUrl?'<img src="'+p.imageUrl+'" alt="">':'')+'<h3>'+p.name+'</h3><p>'+(p.description||'Premium panel product.')+'</p><strong>₹'+p.price+'</strong><button class="mf-glow-btn" onclick="orderPanelProduct(\''+p.id+'\')">🛒 Buy / Order</button></div>').join(""):"<p>No products available yet.</p>";}catch(e){document.getElementById("mf-product-list").textContent="❌ "+e.message;}
+}
+async function orderPanelProduct(id){
+  try{const d=await api("/api/products/"+encodeURIComponent(id)+"/order",{method:"POST"});let box=document.getElementById("mf-product-pay");if(box)box.remove();box=document.createElement("div");box.id="mf-product-pay";box.className="mf-glory-order-modal";const upi=d.upiId||"";const link=upi?"upi://pay?pa="+encodeURIComponent(upi)+"&pn="+encodeURIComponent("FFMAFIA.PANEL")+"&am="+encodeURIComponent(d.order.amount)+"&cu=INR&tn="+encodeURIComponent(d.order.id):"";box.innerHTML='<div class="mf-glory-box" style="max-width:520px;text-align:center"><h2>💳 Complete Payment</h2><p>'+(d.product.name)+'</p><div style="font-size:34px;color:#ffd166;font-weight:950">₹'+d.order.amount+'</div>'+(d.qrUrl?'<img src="'+d.qrUrl+'" style="width:230px;background:#fff;padding:10px;border-radius:18px" alt="QR">':'')+(upi?'<div style="color:#22d3ee;font-weight:900;margin:10px">'+upi+'</div><a class="mf-glow-btn" href="'+link+'">📲 Pay with UPI</a>':'')+'<p style="font-size:12px;color:#aaa">Order ID: '+d.order.id+'</p><button class="mf-glow-btn" onclick="confirmProductPayment(\''+d.order.id+'\')">✓ I Have Paid</button><button class="mf-admin-btn" onclick="this.closest(\'#mf-product-pay\').remove()">Close</button></div>';document.body.appendChild(box);}catch(e){alert("❌ "+e.message);}
+}
+async function confirmProductPayment(orderId){alert("⏳ Payment confirmation saved. Admin will verify Order ID: "+orderId);const b=document.getElementById("mf-product-pay");if(b)b.remove();}
+async function adminCreateProduct(){try{await api("/admin/products",{method:"POST",body:JSON.stringify({name:document.getElementById("new-p-name").value,price:Number(document.getElementById("new-p-price").value),stock:Number(document.getElementById("new-p-stock").value),image_url:document.getElementById("new-p-image").value,description:document.getElementById("new-p-desc").value,delivery_text:document.getElementById("new-p-delivery").value})});alert("✅ Product added");loadAdminTab("products");}catch(e){alert("❌ "+e.message);}}
+async function adminDeleteProduct(id){if(!confirm("Delete this product?"))return;try{await api("/admin/products/"+encodeURIComponent(id),{method:"DELETE"});loadAdminTab("products");}catch(e){alert("❌ "+e.message);}}
+
 async function openAdminPanel(){
   try{ await api("/admin/overview"); }catch(e){ alert("Admin access denied"); return; }
   let old=document.getElementById("mf-admin-panel"); if(old) old.remove();
@@ -734,7 +703,7 @@ async function openAdminPanel(){
     <div class="mf-admin-shell">
       <div class="mf-admin-head"><div><h2 style="margin:0">🛡️ MafiaFF Glory Admin</h2><small style="color:#aaa">Private control center</small></div><button class="mf-admin-btn" onclick="document.getElementById('mf-admin-panel').remove()">✕ Close</button></div>
       <div id="mf-admin-tabs" class="mf-admin-tabs">
-        <button onclick="loadAdminTab('overview')">📊 Overview</button><button onclick="loadAdminTab('users')">👥 Users</button><button onclick="loadAdminTab('groups')">🎮 Groups</button><button onclick="loadAdminTab('pricing')">💎 Pricing</button><button onclick="loadAdminTab('coupons')">🎟️ Coupons</button><button onclick="loadAdminTab('transactions')">💳 Transactions</button><button onclick="loadAdminTab('glory-orders')">🏰 Glory Orders</button><button onclick="loadAdminTab('audit')">📝 Audit</button>
+        <button onclick="loadAdminTab('overview')">📊 Overview</button><button onclick="loadAdminTab('users')">👥 Users</button><button onclick="loadAdminTab('groups')">🎮 Groups</button><button onclick="loadAdminTab('pricing')">💎 Pricing</button><button onclick="loadAdminTab('coupons')">🎟️ Coupons</button><button onclick="loadAdminTab('transactions')">💳 Transactions</button><button onclick="loadAdminTab('products')">🛍️ Products</button><button onclick="loadAdminTab('glory-orders')">🏰 Glory Orders</button><button onclick="loadAdminTab('audit')">📝 Audit</button>
       </div>
       <div id="mf-admin-content" style="margin-top:12px">Loading...</div>
     </div>`;
@@ -753,6 +722,7 @@ async function loadAdminTab(tab){
     }else if(tab==="groups"){
       const d=await api("/admin/groups");
       box.innerHTML=`<div style="overflow:auto"><table class="mf-admin-table"><tr><th>Name</th><th>Region</th><th>Status</th><th>Action</th></tr>${d.groups.map(g=>`<tr><td>${g.name}</td><td>${g.region||"-"}</td><td>${g.status||"-"}</td><td><button class="mf-admin-btn" onclick="adminDelete('/admin/groups/${g.id}','groups')">Delete</button></td></tr>`).join("")}</table></div>`;
+    }else if(tab==="products"){const d=await api("/admin/products");box.innerHTML='<div style="display:grid;gap:14px"><div class="mf-admin-stat"><h3>🛍️ Add Product</h3><input id="new-p-name" placeholder="Product name"><input id="new-p-price" type="number" placeholder="Price ₹"><input id="new-p-stock" type="number" value="-1" placeholder="Stock (-1 unlimited)"><input id="new-p-image" placeholder="Image URL"><textarea id="new-p-desc" placeholder="Description"></textarea><textarea id="new-p-delivery" placeholder="Delivery instructions"></textarea><button class="mf-admin-btn" onclick="adminCreateProduct()">➕ Add Product</button></div><div style="overflow:auto"><table class="mf-admin-table"><tr><th>Product</th><th>Price</th><th>Stock</th><th>Status</th><th>Action</th></tr>'+(d.products||[]).map(p=>'<tr><td>'+p.name+'</td><td>₹'+p.price+'</td><td>'+(p.stock<0?'Unlimited':p.stock)+'</td><td>'+p.status+'</td><td><button class="mf-admin-btn" onclick="adminDeleteProduct(\''+p.id+'\')">Delete</button></td></tr>').join("")+'</table></div></div>';
     }else if(tab==="pricing"){
       const d=await api("/admin/pricing");
       box.innerHTML=`<div style="display:grid;gap:12px">${d.plans.map((p,i)=>`<div class="mf-admin-stat"><input id="apn${i}" value="${p.name}"> <input id="app${i}" type="number" value="${p.price}"> <input id="apc${i}" type="number" value="${p.credits}"> <input id="api${i}" value="${p.id}" disabled></div>`).join("")}<button class="mf-admin-btn" onclick="saveAdminPricing()">💾 Save Pricing</button></div>`;
