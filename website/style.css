@@ -21,7 +21,31 @@ body{
     var(--bg);
   min-height:100vh;
   padding-bottom:90px;
+  position:relative;
+  overflow-x:hidden;
 }
+
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:url("https://raw.githubusercontent.com/Bbofficia/FFGLORY/main/250958b390114ba8efbe289e888015c6.jpg") center/cover no-repeat;
+  opacity:.20;
+  filter:brightness(.62) saturate(1.15);
+}
+
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:0;
+  pointer-events:none;
+  background:linear-gradient(180deg,rgba(5,3,11,.45),rgba(5,3,11,.82));
+}
+
+main,footer{position:relative;z-index:1}
 
 a{text-decoration:none;color:inherit}
 
@@ -299,6 +323,10 @@ footer{
 }
 
 @media(max-width:520px){
+  body::before{
+    opacity:.28;
+    background-position:center top;
+  }
   .topbar{text-align:center}
   .brand{font-size:21px}
   .hero{min-height:65vh}
