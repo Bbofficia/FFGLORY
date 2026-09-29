@@ -135,6 +135,15 @@ app.get('/api/pricing',(req,res)=>{
   res.json({plans:readJson("pricing.json",defaultPricing)});
 });
 
+app.get('/api/credit-history',(req,res)=>{
+  const transactions=readJson("transactions.json",[]).filter(x=>String(x.userId)===String(userKey(req)));
+  const completed=transactions.filter(x=>x.status==="completed");
+  const refunded=transactions.filter(x=>x.status==="refunded");
+  const balance=completed.reduce((sum,x)=>sum+Number(x.credits||0),0)-refunded.reduce((sum,x)=>sum+Number(x.credits||0),0);
+  const purchased=completed.reduce((sum,x)=>sum+Number(x.credits||0),0);
+  res.json({balance:Math.max(0,balance),purchased,history:transactions.slice().reverse().map(x=>({id:x.id,planName:x.planName,credits:Number(x.credits||0),status:x.status,createdAt:x.createdAt}))});
+});
+
 app.get('/api/groups',(req,res)=>{
   const rows=readJson("groups.json",[]);
   res.json({groups:rows.filter(x=>String(x.userId)===String(userKey(req)))});
