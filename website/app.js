@@ -460,25 +460,21 @@ async function openPricingManager(){
 
 async function buyPricingPlan(planId){
   const msg=document.getElementById("mf-pricing-msg");
-  if(msg) msg.textContent="⏳ Processing purchase...";
-
+  if(msg) msg.textContent="⏳ Creating payment order...";
   try{
-    const data=await api("/api/transactions",{
-      method:"POST",
-      body:JSON.stringify({plan_id:planId})
-    });
-
+    const data=await api("/api/transactions",{method:"POST",body:JSON.stringify({plan_id:planId})});
+    const t=data.transaction||{};
+    const upi=data.upiId||"";
+    const upiLink=upi?("upi://pay?pa="+encodeURIComponent(upi)+"&pn="+encodeURIComponent("MafiaFF Glory")+"&am="+encodeURIComponent(t.amount)+"&cu=INR&tn="+encodeURIComponent("MafiaFF "+t.id)):"";
     if(msg){
-      msg.textContent="✅ Purchase successful! Transaction ID: "+(data.transaction?.id||"Done");
-      msg.style.color="#22d3ee";
+      msg.innerHTML='<div style="padding:16px;border:1px solid rgba(168,85,247,.35);border-radius:16px;background:#171025"><b>💳 Payment Pending</b><br><span>Pay ₹'+t.amount+' for '+t.credits+' Credits.</span><br><small>Order: '+t.id+'</small><br><button class="mf-admin-btn" style="margin-top:10px" '+(upiLink?'onclick="location.href=\''+upiLink+'\'"':'disabled')+'>📲 Pay Now</button><button class="mf-admin-btn" style="margin:10px 0 0 8px" onclick="openDashboardApi(\'Transactions\',\'/api/transactions\')">📋 View Order</button><p style="color:#aaa;margin:10px 0 0">'+(upi?'After payment, Admin will verify it and your credits will be added.':'Payment UPI is not configured yet. Admin must configure PAYMENT_UPI_ID.')+'</p></div>';
+      msg.style.color="#fff";
     }
   }catch(e){
-    if(msg){
-      msg.textContent="❌ "+e.message;
-      msg.style.color="#ff6b6b";
-    }
+    if(msg){msg.textContent="❌ "+e.message;msg.style.color="#ff6b6b";}
   }
 }
+
 
 async function openCouponManager(){
   let box=document.getElementById("mf-coupon-panel"); if(box)box.remove();
