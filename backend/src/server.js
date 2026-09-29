@@ -168,7 +168,7 @@ app.get('/api/pricing',async(req,res)=>{
     res.json({plans:plans&&plans.length?plans:readJson("pricing.json",defaultPricing)});
   }catch(e){
     console.error('Pricing load failed:', e?.message || e);
-    res.status(500).json({error:'Unable to load pricing'});
+    res.status(500).json({error:'Unable to load pricing',detail:String(e?.message||e)});
   }
 });
 
