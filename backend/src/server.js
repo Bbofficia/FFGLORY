@@ -688,16 +688,18 @@ app.patch('/admin/transactions/:id/reject',appAuth,adminOnly,async(req,res)=>{
   res.json({ok:true,transaction:row});
 });
 
-app.patch('/admin/transactions/:id/refund',appAuth,adminOnly,(req,res)=>{
+app.patch('/admin/transactions/:id/refund',appAuth,adminOnly,async(req,res)=>{
   const rows=readJson("transactions.json",[]);
-  const row=rows.find(x=>String(x.id)===String(req.params.id));
+  let row=rows.find(x=>String(x.id)===String(req.params.id));
   if(!row)return res.status(404).json({error:"Transaction not found"});
+  if(row.type==="glory_debit"||row.type==="glory_refund")return res.status(400).json({error:"This transaction type cannot be refunded"});
   if(row.status==="refunded")return res.status(400).json({error:"Credits already refunded"});
   if(row.status!=="completed")return res.status(400).json({error:"Only completed transactions can be refunded"});
   row.status="refunded";
   row.refundedAt=new Date().toISOString();
   row.refundedBy=req.user.id;
   writeJson("transactions.json",rows);
+  try{ await savePersistentTransaction(row); }catch(e){}
   audit(req,"admin.transaction.refund",row.id);
   res.json({ok:true,refundedCredits:Number(row.credits||0),transaction:row});
 });
