@@ -1,38 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>FFMAFIA.PANEL — Premium Panel Store</title><meta name="theme-color" content="#090611">
-<link rel="stylesheet" href="style.css">
-</head>
-<body class="storefront">
-<header class="store-header">
-<div class="store-brand"><span class="store-logo">⚡</span><div><b>FFMAFIA</b><span>.PANEL</span><small>PREMIUM PANEL STORE</small></div></div>
-<div class="store-actions"><button class="store-login" onclick="openAuth(false)">LOGIN</button><button class="store-menu" onclick="openAuth(true)">SIGN UP</button></div>
-</header>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FFMAFIA.PANEL — Panel Store</title><meta name="theme-color" content="#080611"><link rel="stylesheet" href="style.css"></head><body class="storefront">
+<header class="store-header"><div class="store-brand"><span class="store-logo">⚡</span><div><b>FFMAFIA</b><span>.PANEL</span><small>PREMIUM PANEL STORE</small></div></div><div class="store-actions"><button class="store-login" onclick="openAuth(false)">LOGIN</button><button class="store-signup" onclick="openAuth(true)">SIGN UP</button></div></header>
 <main class="store-main">
 <section class="store-notice"><div class="notice-icon">📢</div><div><b>Notice</b><p>২৪/৭ Panel/Key order করতে পারবেন। Payment verify হওয়ার পর delivery দেওয়া হবে।</p></div></section>
-<section class="store-title"><div class="store-kicker">FFMAFIA.PANEL</div><h1>Premium <span>Panel Store</span></h1><p>Browse products, choose your panel and place your order.</p></section>
-<section class="store-toolbar">
-<button class="filter-btn active" onclick="filterHomeProducts('all',this)">All</button>
-<button class="filter-btn" onclick="filterHomeProducts('non-root',this)">NON ROOT</button>
-<button class="filter-btn" onclick="filterHomeProducts('root',this)">ROOT</button>
-<button class="filter-btn" onclick="filterHomeProducts('android',this)">ANDROID</button>
-<button class="filter-btn" onclick="filterHomeProducts('ios',this)">IOS</button>
-<button class="filter-btn" onclick="filterHomeProducts('other',this)">MORE</button>
-</section>
-<section class="store-products"><div class="store-section-head"><h2>🛍️ Available Products</h2><button class="refresh-products" onclick="loadHomeProducts()">↻ Refresh</button></div><div id="home-product-grid" class="store-product-grid"><div class="product-loading">Loading products...</div></div></section>
-<section class="store-info-grid">
-<div class="store-info-card"><div>⚡</div><h3>Fast Delivery</h3><p>Verified payment-এর পরে product delivery process শুরু হবে।</p></div>
-<div class="store-info-card"><div>🔒</div><h3>Secure Account</h3><p>Login করে নিজের order এবং payment status দেখতে পারবেন।</p></div>
-<div class="store-info-card"><div>💬</div><h3>Support</h3><p>যেকোনো সাহায্যের জন্য আমাদের Telegram support-এ যোগাযোগ করুন।</p></div>
-</section>
-<section class="store-activity">
-<div class="activity-card"><div class="activity-head"><div><span class="live-dot"></span><b>Order Center</b></div><button onclick="openAuth(false)">My Orders →</button></div><p>Order করতে Login করুন। Payment status, order history এবং delivery information dashboard থেকে পাওয়া যাবে।</p></div>
-<div class="activity-card"><div class="activity-head"><div>📢 <b>Telegram</b></div><button onclick="window.open('https://t.me/mafiaffglory','_blank')">Join Telegram Group →</button></div><p>Latest updates, new products এবং announcements পেতে official Telegram group-এ join করুন।</p></div>
-</section>
-</main>
-<footer class="store-footer"><div class="store-brand footer-brand"><span class="store-logo">⚡</span><div><b>FFMAFIA</b><span>.PANEL</span></div></div><p>© 2026 FFMAFIA.PANEL • Premium Digital Panel Marketplace</p><a href="https://t.me/TeamPro78" target="_blank">💬 @TeamPro78 Support</a></footer>
+<section class="store-hero"><div class="store-kicker">WELCOME TO FFMAFIA.PANEL</div><h1>Premium <span>Panel Store</span></h1><p>Choose a product, place your order and manage everything from your account.</p></section>
+<section class="store-toolbar"><button class="filter-btn active" onclick="filterHomeProducts('all',this)">All</button><button class="filter-btn" onclick="filterHomeProducts('non-root',this)">NON ROOT</button><button class="filter-btn" onclick="filterHomeProducts('root',this)">ROOT</button><button class="filter-btn" onclick="filterHomeProducts('android',this)">ANDROID</button><button class="filter-btn" onclick="filterHomeProducts('ios',this)">IOS</button><button class="filter-btn" onclick="filterHomeProducts('other',this)">MORE</button></section>
+<section><div class="store-section-head"><h2>🛍️ All Products</h2><button class="refresh-products" onclick="loadHomeProducts()">↻ Refresh</button></div><div id="home-product-grid" class="store-product-grid"><div class="product-loading">Loading products...</div></div></section>
+<section class="store-feature-grid"><div><b>⚡ Fast Delivery</b><p>Payment verification-এর পর delivery information পাওয়া যাবে।</p></div><div><b>🔒 Secure Account</b><p>নিজের order, payment এবং delivery status dashboard থেকে দেখুন।</p></div><div><b>💬 Support</b><p><a href="https://t.me/TeamPro78" target="_blank">@TeamPro78</a></p></div></section>
+<section class="store-activity"><div><div class="activity-head"><b>🚀 Recent Orders</b><button onclick="openAuth(false)">My Orders →</button></div><p>Login করে নিজের latest orders এবং payment status দেখুন।</p></div><div><div class="activity-head"><b>💬 Telegram Group</b><button onclick="window.open('https://t.me/mafiaffglory','_blank')">Join Group →</button></div><p>New product ও service updates পেতে group-এ থাকুন।</p></div></section>
+</main><footer class="store-footer"><b>FFMAFIA<span>.PANEL</span></b><p>© 2026 FFMAFIA.PANEL • Premium Panel Marketplace</p><a href="https://t.me/TeamPro78" target="_blank">Support: @TeamPro78</a> · <a href="https://t.me/mafiaffglory" target="_blank">Telegram Group</a></footer>
 <nav class="store-bottom-nav"><a href="#">🏠<small>Home</small></a><a href="#home-product-grid">🛍️<small>Products</small></a><a href="javascript:openAuth(false)">👤<small>Account</small></a><a href="https://t.me/TeamPro78" target="_blank">💬<small>Support</small></a></nav>
-<script src="app.js?v=20260929-store3"></script>
-</body></html>
+<script src="app.js?v=20260929-store3"></script></body></html>
