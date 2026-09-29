@@ -613,7 +613,7 @@ async function buyPricingPlan(planId){
         '<div>Order ID: <code>'+t.id+'</code></div>'+
         '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span>UPI: <b>'+(safeUpi||"Not configured")+'</b></span><button class="mf-admin-btn" '+copyAction+'>📋 Copy UPI</button></div>'+
         '</div>'+
-        '<div style="padding:14px;border-radius:16px;background:rgba(255,255,255,.05);text-align:center;margin-bottom:12px"><div style="font-size:34px">▦</div><b>QR PAYMENT</b><p style="margin:6px 0;color:#aaa;font-size:12px">QR code will be available here.</p></div>'+
+        '<div style="padding:14px;border-radius:16px;background:rgba(255,255,255,.05);text-align:center;margin-bottom:12px"><img src="https://raw.githubusercontent.com/Bbofficia/FFGLORY/main/website/phonepe-qr.svg" alt="PhonePe QR" style="width:min(280px,100%);border-radius:14px;display:block;margin:auto"><b style="display:block;margin-top:10px">SCAN & PAY WITH PHONEPE</b><p style="margin:6px 0;color:#aaa;font-size:12px">Scan the QR code using your PhonePe app.</p></div>'+
         '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
         '<button class="mf-admin-btn" '+(upiLink?'onclick="location.href=\\''+upiLink+'\\'"':'disabled')+'>📲 Pay with UPI</button>'+
         '<button class="mf-admin-btn" onclick="openDashboardApi(\\'Transactions\\',\\'/api/transactions\\')">✓ I Have Paid</button></div>'+
