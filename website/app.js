@@ -624,7 +624,7 @@ async function buyPricingPlan(planId){
         '<div style="padding:14px;border-radius:16px;background:rgba(255,255,255,.05);text-align:center;margin-bottom:12px"><img src="https://raw.githubusercontent.com/Bbofficia/FFGLORY/main/website/phonepe-qr.svg" alt="PhonePe QR" style="width:min(280px,100%);border-radius:14px;display:block;margin:auto"><b style="display:block;margin-top:10px">SCAN & PAY WITH PHONEPE</b><p style="margin:6px 0;color:#aaa;font-size:12px">Scan the QR code using your PhonePe app.</p></div>'+
         '<div style="display:flex;gap:8px;flex-wrap:wrap">'+
         '<button class="mf-admin-btn" '+(upiLink?'onclick="location.href=\\''+upiLink+'\\'"':'disabled')+'>📲 Pay with UPI</button>'+
-        '<button class="mf-admin-btn" onclick="showPaymentStatus(''+t.id+'')">✓ I Have Paid</button></div>'+
+        '<button class="mf-admin-btn" onclick="showPaymentStatus(&quot;'+t.id+'&quot;)">✓ I Have Paid</button></div>'+
         '<p style="color:#aaa;margin:12px 0 0;font-size:12px">'+(upi?'Payment stays pending until Admin verifies it.':'Payment UPI is not configured yet. Admin must configure PAYMENT_UPI_ID.')+'</p></div>';
       msg.style.color="#fff";
     }
