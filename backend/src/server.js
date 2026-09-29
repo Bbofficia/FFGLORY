@@ -292,7 +292,7 @@ app.post('/api/products/:id/order',appAuth,async(req,res)=>{
   const stock=Number(product.stock??-1); if(stock===0) return res.status(400).json({error:'Out of stock'});
   const tx={id:crypto.randomUUID(),userId:userKey(req),planId:'product:'+id,planName:product.name,amount:Number(product.price||0),credits:0,status:'payment_pending',type:'product_purchase',orderId:crypto.randomUUID(),productId:id,createdAt:new Date().toISOString()};
   const rows=readJson('transactions.json',[]); rows.push(tx); writeJson('transactions.json',rows); try{await savePersistentTransaction(tx)}catch(e){}
-  audit(req,'product.order.create',id); res.status(201).json({ok:true,order:tx,upiId:process.env.PAYMENT_UPI_ID||'',qrUrl:'https://raw.githubusercontent.com/Bbofficia/FFGLORY/main/phonepe-qr.svg',product:{id:product.id,name:product.name,price:Number(product.price||0),deliveryText:product.deliveryText||''}});
+  audit(req,'product.order.create',id); res.status(201).json({ok:true,order:tx,upiId:process.env.PAYMENT_UPI_ID||'',qrUrl:'https://raw.githubusercontent.com/Bbofficia/FFGLORY/main/website/phonepe-qr.svg',product:{id:product.id,name:product.name,price:Number(product.price||0),deliveryText:product.deliveryText||''}});
 });
 
 app.post('/api/product-orders/:id/confirm-payment',appAuth,async(req,res)=>{
@@ -724,7 +724,7 @@ app.use((err,req,res,next)=>{ if(res.headersSent) return next(err); const status
 
 const port=Number(process.env.PORT||8080);
 if(!Number.isInteger(port)||port<1||port>65535) throw new Error('PORT must be a valid TCP port');
-const server=app.listen(port,()=>console.log(`FFGlory backend v4.1 listening on ${port}`));
+const server=app.listen(port,()=>console.log(`FFMAFIA.PANEL backend listening on ${port}`));
 function shutdown(signal){ console.log(`${signal}: shutting down`); server.close(()=>process.exit(0)); setTimeout(()=>process.exit(1),10000).unref(); }
 process.on('SIGTERM',()=>shutdown('SIGTERM'));
 process.on('SIGINT',()=>shutdown('SIGINT'));
