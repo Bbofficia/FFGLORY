@@ -229,6 +229,17 @@ async function showDashboard(){
           <p id="mf-user">Loading account...</p>
         </div>
 
+        <div class="card" style="margin-bottom:20px;background:linear-gradient(145deg,#171025,#080611);border:1px solid rgba(34,211,238,.35)">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+            <div>
+              <small style="color:#aaa">💎 AVAILABLE CREDITS</small>
+              <div id="mf-credit-balance" style="font-size:34px;font-weight:900;color:#ffd166;margin-top:4px">—</div>
+              <div id="mf-credit-summary" style="color:#aaa;font-size:13px">Loading credit balance...</div>
+            </div>
+            <button class="mf-admin-btn" onclick="openCreditHistory()">📋 Credit History</button>
+          </div>
+        </div>
+
         <div class="grid">
           <div class="card">
             <h3>👥 Groups</h3>
@@ -283,6 +294,7 @@ async function showDashboard(){
 
   dash.style.display="block";
   loadInlineGroups();
+  loadCreditBalance();
 
   const groupsBtn = document.querySelector(".mf-groups-open");
   if(groupsBtn){
@@ -316,6 +328,37 @@ if(localStorage.getItem("ffglory_token")){
   });
 }
 
+
+async function loadCreditBalance(){
+  try{
+    const d=await api("/api/credit-history");
+    const balance=document.getElementById("mf-credit-balance");
+    const summary=document.getElementById("mf-credit-summary");
+    if(balance) balance.textContent=Number(d.balance||0)+" Credits";
+    if(summary) summary.textContent="Total purchased: "+Number(d.purchased||0)+" Credits";
+  }catch(e){
+    const summary=document.getElementById("mf-credit-summary");
+    if(summary) summary.textContent="Unable to load credit balance";
+  }
+}
+
+async function openCreditHistory(){
+  try{
+    const d=await api("/api/credit-history");
+    let box=document.getElementById("mf-credit-history");
+    if(box) box.remove();
+    box=document.createElement("div");
+    box.id="mf-credit-history";
+    box.style.cssText="position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.86);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;padding:18px";
+    const rows=d.history||[];
+    box.innerHTML='<div style="width:min(650px,100%);max-height:85vh;overflow:auto;background:#100b1d;border:1px solid rgba(168,85,247,.5);border-radius:24px;padding:22px;color:white">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0">💎 Credit History</h2><button class="mf-admin-btn" onclick="this.closest(\'#mf-credit-history\').remove()">✕</button></div>'+
+      '<div style="margin:16px 0;padding:16px;border-radius:16px;background:#171025"><small style="color:#aaa">CURRENT BALANCE</small><div style="font-size:30px;font-weight:900;color:#ffd166">'+Number(d.balance||0)+' Credits</div><small style="color:#aaa">Purchased: '+Number(d.purchased||0)+' Credits</small></div>'+
+      (rows.length?rows.map(x=>'<div style="padding:13px;margin:8px 0;border-radius:14px;background:#171025;border:1px solid rgba(168,85,247,.25)"><b>'+String(x.planName||"Credit Order")+'</b><br>🎟️ '+Number(x.credits||0)+' Credits &nbsp; • &nbsp; <span style="color:#22d3ee">'+String(x.status||"")+'</span><br><small style="color:#888">'+new Date(x.createdAt).toLocaleString()+'</small></div>').join(""):'<div style="color:#aaa">No credit history yet.</div>')+
+      '</div>';
+    document.body.appendChild(box);
+  }catch(e){ alert("Credit history error: "+e.message); }
+}
 
 async function loadInlineGroups(){
   const list=document.getElementById("mf-groups-inline-list");
