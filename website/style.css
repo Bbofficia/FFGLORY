@@ -183,3 +183,12 @@ footer{text-align:center;color:#aaa4b8;padding:35px 20px}
 
 /* Panel-store cleanup */
 .mf-card-coupons{display:none!important}
+
+.store-stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:24px 0}
+.store-stats-row>div,.store-panel-box{padding:18px;border-radius:18px;background:linear-gradient(145deg,rgba(18,13,29,.95),rgba(8,17,24,.95));border:1px solid rgba(168,85,247,.22);position:relative;overflow:hidden}
+.store-stats-row>div:after,.store-panel-box:after{content:"";position:absolute;inset:0;border-radius:inherit;border:1px solid rgba(34,211,238,.08);pointer-events:none}
+.store-stats-row b{display:block;font-size:25px;color:#ffd166}.store-stats-row span{display:block;color:#96909f;font-size:11px;margin-top:4px}
+.store-activity-grid{display:grid;grid-template-columns:1.25fr 1fr;gap:13px;margin-top:13px}
+.store-panel-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.store-panel-title h2{font-size:18px}.store-panel-title span{font-size:9px;color:#22d3ee;border:1px solid rgba(34,211,238,.3);padding:5px 7px;border-radius:99px}
+.store-order-row{display:grid;grid-template-columns:34px 1fr auto;gap:9px;align-items:center;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.07)}.store-order-row:last-child{border-bottom:0}.store-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#a855f7,#22d3ee);font-weight:900}.store-order-row b{display:block;font-size:12px}.store-order-row small{display:block;color:#96909f;font-size:10px;margin-top:2px}.store-order-row strong{color:#ffd166;font-size:12px}.store-order-row em{grid-column:2/-1;color:#716b78;font-size:9px;font-style:normal;margin-top:-5px}.store-review{padding:11px 0;border-bottom:1px solid rgba(255,255,255,.07)}.store-review:last-child{border-bottom:0}.store-review b{font-size:12px}.store-review span{float:right;color:#ffd166;font-size:11px}.store-review p{font-size:11px;color:#96909f;margin-top:4px}.store-empty{padding:20px;text-align:center;color:#777181;font-size:11px}
+@media(max-width:680px){.store-stats-row{grid-template-columns:1fr 1fr}.store-stats-row>div:last-child{grid-column:1/-1}.store-activity-grid{grid-template-columns:1fr}}
