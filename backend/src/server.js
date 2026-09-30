@@ -517,6 +517,22 @@ async function calculateCreditBalance(userId){
   return rows.filter(x=>String(x.userId)===String(userId)&&x.status==="completed").reduce((sum,x)=>sum+Number(x.credits||0),0);
 }
 
+app.get('/api/storefront/activity',async(req,res)=>{
+  try{
+    let tx=[];
+    try{const p=await getAllPersistentTransactions(); if(Array.isArray(p))tx=p;}catch(e){}
+    if(!tx.length) tx=readJson("transactions.json",[]);
+    const completed=tx.filter(x=>x.status==="completed" && (x.type==="product_purchase" || String(x.planId||"").startsWith("product:")));
+    const recent=completed.slice().sort((a,b)=>new Date(b.createdAt||b.created_at||0)-new Date(a.createdAt||a.created_at||0)).slice(0,12).map(x=>({
+      product:String(x.planName||"Panel Product"),
+      amount:Number(x.amount||0),
+      status:"completed",
+      createdAt:x.createdAt||x.created_at||null
+    }));
+    const totalSales=completed.reduce((n,x)=>n+Number(x.amount||0),0);
+    res.json({recentOrders:recent,totalOrders:completed.length,totalSales});
+  }catch(e){res.json({recentOrders:[],totalOrders:0,totalSales:0});}
+});
 app.get('/admin/overview',appAuth,adminOnly,(req,res)=>{
   const users=Object.values(readUsers());
   const groups=readJson("groups.json",[]);
