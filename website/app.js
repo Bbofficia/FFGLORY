@@ -240,7 +240,6 @@ async function showDashboard(){
         <div class="mf-dash-grid">
           <div class="mf-dash-card"><div class="mf-dash-icon">🛍️</div><h3>Panel Store</h3><p>Browse products and place orders.</p><button class="mf-glow-btn" onclick="openProductStore()">🛒 Browse Products</button></div>
           <div class="mf-dash-card"><div class="mf-dash-icon">💳</div><h3>Payments</h3><p>Product payments and order status.</p><button class="mf-glow-btn" onclick="openProductStore()">💳 View Products</button></div>
-          <div class="mf-dash-card"><div class="mf-dash-icon">💰</div><h3>Add Funds</h3><p>Add balance by UPI and send payment for admin verification.</p><button class="mf-glow-btn" onclick="openAddFunds()">💰 Add Funds</button></div>
           <div class="mf-dash-card mf-card-transactions"><div class="mf-dash-icon">📦</div><h3>My Orders</h3><p>Track payments and purchase history.</p><button class="mf-glow-btn" onclick="openDashboardApi('My Orders','/api/transactions')">📋 View Orders</button></div>
           <div class="mf-dash-card"><div class="mf-dash-icon">💬</div><h3>Support</h3><p>Direct Telegram support: @TeamPro78</p><button class="mf-glow-btn" onclick="window.open('https://t.me/TeamPro78','_blank')">💬 @TeamPro78</button></div>
           <div class="mf-dash-card"><div class="mf-dash-icon">📢</div><h3>Telegram Group</h3><p>Join the official FFMAFIA.PANEL Telegram group.</p><button class="mf-glow-btn" onclick="window.open('https://t.me/mafiaffglory','_blank')">📢 Join Group</button></div>
@@ -471,3 +470,21 @@ function buyHomeProduct(id){if(!localStorage.getItem("ffglory_token")){openAuth(
 document.addEventListener("DOMContentLoaded",()=>{loadHomeProducts();});
 
 function searchHomeProducts(term){const q=String(term||"").toLowerCase().trim();const base=homeProductsCache;const filtered=q?base.filter(p=>String((p.name||"")+" "+(p.description||"")).toLowerCase().includes(q)):base;const old=homeProductsCache;homeProductsCache=filtered;renderHomeProducts();homeProductsCache=old;}
+
+/* FFMAFIA storefront activity */
+async function loadStorefrontActivity(){
+  try{
+    const d=await api("/api/storefront/activity");
+    const orders=document.getElementById("store-recent-orders");
+    if(orders){
+      const rows=d.recentOrders||[];
+      orders.innerHTML=rows.length?rows.map(o=>{
+        const dt=o.createdAt?new Date(o.createdAt).toLocaleString():"Recently";
+        return '<div class="store-order-row"><span class="store-avatar">✓</span><div><b>Verified Order</b><small>'+String(o.product)+'</small></div><strong>₹'+Number(o.amount||0)+'</strong><em>'+dt+'</em></div>';
+      }).join(""):'<div class="store-empty">No completed orders yet.</div>';
+    }
+    const total=document.getElementById("store-total-orders"); if(total) total.textContent=Number(d.totalOrders||0);
+    const sales=document.getElementById("store-total-sales"); if(sales) sales.textContent="₹"+Number(d.totalSales||0);
+  }catch(e){}
+}
+document.addEventListener("DOMContentLoaded",()=>{loadStorefrontActivity();});
