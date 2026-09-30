@@ -535,14 +535,12 @@ app.get('/api/storefront/activity',async(req,res)=>{
 });
 app.get('/admin/overview',appAuth,adminOnly,(req,res)=>{
   const users=Object.values(readUsers());
-  const groups=readJson("groups.json",[]);
   const transactions=readJson("transactions.json",[]);
   res.json({
     stats:{
       users:users.length,
       activeUsers:users.filter(u=>u.active!==false).length,
       admins:users.filter(u=>u.role==="admin").length,
-      groups:groups.length,
       transactions:transactions.length,
       revenue:transactions.reduce((n,x)=>n+Number(x.amount||0),0)
     }
