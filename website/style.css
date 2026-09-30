@@ -180,3 +180,6 @@ footer{text-align:center;color:#aaa4b8;padding:35px 20px}
 .store-quick-links{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:16px 0 4px}
 .store-quick-links a{padding:9px 13px;border:1px solid rgba(168,85,247,.28);border-radius:11px;background:rgba(15,11,23,.85);color:#d9d3e2;text-decoration:none;font-size:11px;font-weight:800}
 @media(max-width:680px){.store-hero.compact-hero{min-height:145px!important;padding:18px 14px!important}.store-hero.compact-hero .hero-art{display:none}.store-main{padding-top:10px!important}.store-notice{margin-bottom:8px}.store-search{margin-top:6px!important}.store-toolbar{padding-bottom:10px!important}}
+
+/* Panel-store cleanup */
+.mf-card-coupons{display:none!important}
