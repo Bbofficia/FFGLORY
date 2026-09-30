@@ -6,5 +6,18 @@
 <section class="store-search"><input id="home-product-search" oninput="searchHomeProducts(this.value)" placeholder="🔎 Search panel / product..."></section><section class="store-toolbar"><button class="filter-btn active" onclick="filterHomeProducts('all',this)">All</button><button class="filter-btn" onclick="filterHomeProducts('non-root',this)">NON ROOT</button><button class="filter-btn" onclick="filterHomeProducts('root',this)">ROOT</button><button class="filter-btn" onclick="filterHomeProducts('android',this)">ANDROID</button><button class="filter-btn" onclick="filterHomeProducts('ios',this)">IOS</button><button class="filter-btn" onclick="filterHomeProducts('other',this)">MORE</button></section>
 <section><div class="store-section-head"><h2>🛍️ All Products</h2><button class="refresh-products" onclick="loadHomeProducts()">↻ Refresh</button></div><div id="home-product-grid" class="store-product-grid"><div class="product-loading">Loading products...</div></div></section>
 <section class="store-quick-links"><a href="https://t.me/TeamPro78" target="_blank">💬 @TeamPro78</a><a href="https://t.me/mafiaffglory" target="_blank">📢 Telegram Group</a><a href="javascript:openAuth(false)">📦 My Orders</a></section>
+<section class="store-stats-row">
+  <div><b id="store-total-orders">0</b><span>Completed Orders</span></div>
+  <div><b id="store-total-sales">₹0</b><span>Total Sales</span></div>
+  <div><b>24/7</b><span>Order Support</span></div>
+</section>
+<section class="store-activity-grid">
+  <div class="store-panel-box"><div class="store-panel-title"><h2>🚀 Recent Orders</h2><span>LIVE</span></div><div id="store-recent-orders"><div class="store-empty">Loading...</div></div></div>
+  <div class="store-panel-box"><div class="store-panel-title"><h2>💬 Customer Feedback</h2><span>REVIEWS</span></div>
+    <div class="store-review"><b>Verified Buyer</b><span>★★★★★</span><p>Fast response and easy ordering.</p></div>
+    <div class="store-review"><b>Verified Buyer</b><span>★★★★★</span><p>Payment process is simple.</p></div>
+    <div class="store-review"><b>Verified Buyer</b><span>★★★★★</span><p>Support team is available on Telegram.</p></div>
+  </div>
+</section>
 </main>
 <script src="app.js?v=20260929-store3"></script></body></html>
