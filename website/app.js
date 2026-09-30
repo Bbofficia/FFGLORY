@@ -233,7 +233,7 @@ async function showDashboard(){
         </div>
 
         <div class="mf-dash-section-title">
-          <span>Quick Access</span>
+          <span>Panel Store</span>
           <small>Everything you need</small>
         </div>
 
@@ -251,7 +251,7 @@ async function showDashboard(){
             <h3>Admin Control Center</h3>
             <p>Private administrator tools.</p>
           </div>
-          
+          <button class="mf-glow-btn" onclick="openAdminPanel()">🛡️ Open Admin</button>
         </div>
 
         <button class="mf-logout-btn" onclick="logoutUser()">Logout</button>
